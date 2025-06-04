@@ -201,11 +201,34 @@ Format the response as JSON with this structure:
         # Clean up the response
         cleaned_response = str(response).strip()
         
-        return {
-            "cover_letter_id": str(uuid.uuid4()),
-            "cover_letter": cleaned_response,
-            "created_at": datetime.utcnow()
-        }
+        # Try to parse as JSON first
+        try:
+            if "```json" in cleaned_response:
+                # Extract JSON from markdown code blocks
+                start_marker = "```json"
+                end_marker = "```"
+                start_index = cleaned_response.find(start_marker) + len(start_marker)
+                end_index = cleaned_response.find(end_marker, start_index)
+                if end_index > start_index:
+                    cleaned_response = cleaned_response[start_index:end_index].strip()
+            
+            import json
+            parsed_response = json.loads(cleaned_response)
+            
+            return {
+                "cover_letter_id": str(uuid.uuid4()),
+                "short_version": parsed_response.get("short_version", ""),
+                "long_version": parsed_response.get("long_version", ""),
+                "created_at": datetime.utcnow()
+            }
+        except json.JSONDecodeError:
+            # Fallback: treat as single cover letter
+            return {
+                "cover_letter_id": str(uuid.uuid4()),
+                "short_version": cleaned_response[:1000] + "..." if len(cleaned_response) > 1000 else cleaned_response,
+                "long_version": cleaned_response,
+                "created_at": datetime.utcnow()
+            }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Cover letter generation failed: {str(e)}")
