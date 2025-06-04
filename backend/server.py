@@ -135,10 +135,10 @@ async def generate_cover_letter(request: ResumeAnalysisRequest):
         # Import the emergentintegrations library
         from emergentintegrations.llm.chat import LlmChat, UserMessage
         
-        system_prompt = """You are an expert career consultant and professional cover letter writer. Your task is to create a compelling, personalized cover letter that demonstrates the candidate's fit for the specific role.
+        system_prompt = """You are an expert career consultant and professional cover letter writer. Your task is to create TWO compelling, personalized cover letters that demonstrate the candidate's fit for the specific role.
 
 COVER LETTER BEST PRACTICES:
-1. **Professional Structure**: Opening paragraph, 2-3 body paragraphs, closing paragraph
+1. **Professional Structure**: Opening paragraph, body paragraphs, closing paragraph
 2. **Personalization**: Address specific company and role requirements
 3. **Value Proposition**: Clearly articulate what the candidate brings to the role
 4. **Evidence-Based**: Use specific examples and quantifiable achievements from the resume
@@ -146,36 +146,32 @@ COVER LETTER BEST PRACTICES:
 6. **Professional Tone**: Confident but not arrogant, enthusiastic but professional
 7. **Call to Action**: End with a clear next step request
 
-STRUCTURE TO FOLLOW:
+GENERATE TWO VERSIONS:
 
-**Opening Paragraph:**
-- Mention the specific position and how you learned about it
-- Brief statement of interest and top qualification
-- Hook that makes them want to read more
+**VERSION 1 - CONCISE (250 words):**
+- Opening paragraph: Position mention + top qualification
+- One strong body paragraph: Most critical requirement with quantified example
+- Closing paragraph: Interest + call to action
+- Focus on impact and brevity
 
-**Body Paragraph 1:**
-- Address the most critical job requirement
-- Provide specific example from resume that demonstrates this skill/experience
-- Quantify impact when possible
+**VERSION 2 - COMPREHENSIVE (450-600 words):**
+- Opening paragraph: Position mention + compelling hook
+- Body paragraph 1: Address most critical job requirement with detailed examples
+- Body paragraph 2: Address 2-3 additional requirements with specific achievements
+- Body paragraph 3: Cultural fit, company knowledge, and enthusiasm
+- Closing paragraph: Strong value proposition + professional call to action
 
-**Body Paragraph 2:**
-- Address 1-2 additional key requirements
-- Show cultural fit and understanding of the company/role
-- Demonstrate enthusiasm and knowledge about the position
-
-**Closing Paragraph:**
-- Reiterate interest and value proposition
-- Professional call to action (interview request)
-- Thank them for their consideration
-
-Generate a complete, professional cover letter that follows this structure. Make it:
+Both versions should be:
 - Specific to the job requirements
 - Professional yet personable
-- 300-400 words in length
 - Focused on value and fit
 - Ready to use with minimal editing
 
-Format the response as a complete cover letter with proper spacing and paragraphs."""
+Format the response as JSON with this structure:
+{
+  "short_version": "Complete 250-word cover letter text",
+  "long_version": "Complete 450-600 word cover letter text"
+}"""
 
         # Create AI chat instance
         chat = LlmChat(
