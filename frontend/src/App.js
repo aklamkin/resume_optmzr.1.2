@@ -23,6 +23,10 @@ function App() {
   const [coverLetterLong, setCoverLetterLong] = useState('');
   const [selectedVersion, setSelectedVersion] = useState('short'); // 'short' or 'long'
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
+  
+  // Ratings popup state
+  const [showRatingPopup, setShowRatingPopup] = useState(false);
+  const [selectedRating, setSelectedRating] = useState(null);
 
   // Handle panel resizing
   const handleMouseDown = useCallback((index) => (e) => {
