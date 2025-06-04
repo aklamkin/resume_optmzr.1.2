@@ -642,6 +642,15 @@ function App() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-blue-900 mb-2">Recommendation:</h3>
                 <p className="text-blue-800">{selectedRating.recommendation}</p>
+                
+                {selectedRating.type === 'keywords' && (
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <p className="text-sm text-blue-700">
+                      <strong>Pro Tip:</strong> Add missing keywords naturally in your skills section, 
+                      job descriptions, or achievements. Avoid keyword stuffing - use them in meaningful context.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
