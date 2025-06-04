@@ -755,56 +755,68 @@ function App() {
               {/* Original Resume */}
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <h3 className="text-lg font-semibold mb-4 text-gray-900">Original Resume</h3>
-                <div className="bg-gray-50 p-4 rounded border">
-                  <div className="h-80 overflow-y-auto">
-                    <div className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                      {resumeText}
-                    </div>
-                  </div>
+                <div className="bg-gray-50 p-4 rounded border h-80 overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
+                    {resumeText}
+                  </pre>
                 </div>
               </div>
 
               {/* AI Suggestions */}
               <div className="bg-white rounded-lg shadow-lg p-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900">AI Suggestions</h3>
-                <div className="bg-blue-50 p-4 rounded border">
-                  <div className="h-80 overflow-y-auto space-y-4">
-                    {suggestions.map((suggestion, index) => (
-                      <div key={index} className="bg-white p-4 rounded border border-gray-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-indigo-600 uppercase bg-indigo-50 px-2 py-1 rounded">
-                            {suggestion.section}
-                          </span>
-                          <button
-                            onClick={() => {
-                              // Simple alert for now - no complex state management
-                              alert(`Suggestion for ${suggestion.section}: ${suggestion.suggested_text}`);
-                            }}
-                            className="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full hover:bg-green-200 transition-colors"
-                          >
-                            View
-                          </button>
-                        </div>
-                        {suggestion.current_text && (
+                <h3 className="text-lg font-semibold mb-4 text-gray-900">AI Suggestions ({suggestions.length})</h3>
+                <div className="bg-blue-50 p-4 rounded border h-80 overflow-y-auto">
+                  {suggestions.length > 0 ? (
+                    <div className="space-y-3">
+                      {suggestions.map((suggestion, index) => (
+                        <div key={`suggestion-${index}`} className="bg-white p-3 rounded border border-gray-200">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-medium text-indigo-600 uppercase bg-indigo-50 px-2 py-1 rounded">
+                              {suggestion.section || 'general'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const text = `Section: ${suggestion.section}\n\nSuggestion: ${suggestion.suggested_text}\n\nReason: ${suggestion.reason}`;
+                                navigator.clipboard.writeText(text).then(() => {
+                                  alert('Suggestion copied to clipboard!');
+                                }).catch(() => {
+                                  alert(text);
+                                });
+                              }}
+                              className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200 transition-colors border-0"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                          
+                          {suggestion.current_text && (
+                            <div className="mb-2">
+                              <p className="text-xs text-gray-500 mb-1">Current:</p>
+                              <p className="text-xs text-gray-700 bg-red-50 p-2 rounded border">
+                                {suggestion.current_text}
+                              </p>
+                            </div>
+                          )}
+                          
                           <div className="mb-2">
-                            <p className="text-xs text-gray-500 mb-1">Current:</p>
-                            <p className="text-sm text-gray-700 bg-red-50 p-2 rounded">
-                              {suggestion.current_text}
+                            <p className="text-xs text-gray-500 mb-1">Suggested:</p>
+                            <p className="text-xs text-gray-700 bg-green-50 p-2 rounded border">
+                              {suggestion.suggested_text}
                             </p>
                           </div>
-                        )}
-                        <div className="mb-2">
-                          <p className="text-xs text-gray-500 mb-1">Suggested:</p>
-                          <p className="text-sm text-gray-700 bg-green-50 p-2 rounded">
-                            {suggestion.suggested_text}
+                          
+                          <p className="text-xs text-gray-600 italic">
+                            {suggestion.reason}
                           </p>
                         </div>
-                        <p className="text-xs text-gray-600 italic">
-                          {suggestion.reason}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-500 text-sm">
+                      No suggestions available. Try analyzing your resume first.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
