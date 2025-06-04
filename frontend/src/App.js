@@ -649,7 +649,11 @@ function App() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Default Provider
                   </label>
-                  <select className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                  <select 
+                    value={configChanges.default_provider || aiConfig.default_provider || 'gemini'}
+                    onChange={(e) => setConfigChanges(prev => ({ ...prev, default_provider: e.target.value }))}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
                     <option value="gemini">Gemini</option>
                     <option value="openai">OpenAI</option>
                     <option value="perplexity">Perplexity</option>
@@ -657,7 +661,15 @@ function App() {
                 </div>
                 
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">API Keys</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-medium text-gray-900">API Keys</h3>
+                    <button
+                      onClick={() => setEditingConfig(!editingConfig)}
+                      className="text-sm bg-indigo-100 text-indigo-800 px-3 py-1 rounded hover:bg-indigo-200"
+                    >
+                      {editingConfig ? 'Cancel' : 'Edit'}
+                    </button>
+                  </div>
                   <div className="space-y-3">
                     {Object.entries(aiConfig.ai_configs || {}).map(([provider, config]) => (
                       <div key={provider} className="flex items-center space-x-4">
@@ -665,19 +677,41 @@ function App() {
                           {provider}:
                         </span>
                         <input
-                          type="password"
-                          value={config.api_key || ''}
+                          type={editingConfig ? "text" : "password"}
+                          value={
+                            configChanges.ai_configs?.[provider]?.api_key !== undefined 
+                              ? configChanges.ai_configs[provider].api_key 
+                              : config.api_key || ''
+                          }
+                          onChange={(e) => handleConfigChange(provider, 'api_key', e.target.value)}
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                           placeholder="API Key"
+                          disabled={!editingConfig}
                         />
                       </div>
                     ))}
                   </div>
                 </div>
                 
-                <button className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
-                  Save Configuration
-                </button>
+                {editingConfig && (
+                  <div className="flex space-x-4">
+                    <button 
+                      onClick={handleConfigSave}
+                      className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+                    >
+                      Save Configuration
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setEditingConfig(false);
+                        setConfigChanges({});
+                      }}
+                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
