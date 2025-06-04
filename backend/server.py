@@ -201,6 +201,112 @@ async def update_user(user_id: str, update: UserUpdate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class ApplePayPaymentRequest(BaseModel):
+    payment_token: dict
+    amount: float = 1.00
+    currency: str = "USD"
+    user_id: Optional[str] = None
+    analysis_id: Optional[str] = None
+
+# Apple Pay Routes
+@app.post("/api/apple-pay/validate-merchant")
+async def validate_apple_pay_merchant(request: Request):
+    """Validate merchant session with Apple Pay"""
+    try:
+        body = await request.json()
+        validation_url = body.get("validationURL")
+        
+        # For now, return a mock response - in production you'd validate with Apple
+        # This requires Apple Pay merchant certificates and proper setup
+        return {
+            "merchantSession": {
+                "epochTimestamp": int(datetime.utcnow().timestamp()),
+                "expiresAt": int(datetime.utcnow().timestamp()) + 3600,
+                "merchantSessionIdentifier": "session_" + str(uuid.uuid4()),
+                "nonce": str(uuid.uuid4()),
+                "merchantIdentifier": "merchant.com.yourapp.resumeoptimizer",
+                "domainName": "yourdomain.com",
+                "displayName": "Resume Optimizer",
+                "signature": "mock_signature_for_development"
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/apple-pay/process-payment")
+async def process_apple_pay_payment(payment_request: ApplePayPaymentRequest):
+    """Process Apple Pay payment"""
+    try:
+        # Check if user is marked as FREE - skip payment
+        if payment_request.user_id:
+            user = await db.users.find_one({"id": payment_request.user_id})
+            if user and user.get("is_free", False):
+                return {
+                    "success": True, 
+                    "message": "Free user - payment skipped",
+                    "payment_intent_id": f"free_user_{uuid.uuid4()}"
+                }
+        
+        # For development/demo purposes, simulate successful payment
+        # In production, integrate with Stripe or similar payment processor
+        payment_record = {
+            "id": str(uuid.uuid4()),
+            "user_id": payment_request.user_id,
+            "analysis_id": payment_request.analysis_id,
+            "amount": payment_request.amount,
+            "currency": payment_request.currency,
+            "payment_method": "apple_pay",
+            "status": "completed",
+            "payment_intent_id": f"pi_mock_{uuid.uuid4()}",
+            "created_at": datetime.utcnow()
+        }
+        
+        # Store payment record
+        await db.payments.insert_one(payment_record)
+        
+        # Mark analysis as downloaded
+        if payment_request.analysis_id and payment_request.user_id:
+            await db.users.update_one(
+                {"id": payment_request.user_id, "resume_versions.id": payment_request.analysis_id},
+                {"$set": {"resume_versions.$.is_downloaded": True, "resume_versions.$.downloaded_at": datetime.utcnow()}}
+            )
+        
+        return {
+            "success": True,
+            "payment_intent_id": payment_record["payment_intent_id"],
+            "message": "Payment successful"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/users/{user_id}/can-download/{analysis_id}")
+async def check_download_eligibility(user_id: str, analysis_id: str):
+    """Check if user can download analysis (either FREE user or has paid)"""
+    try:
+        user = await db.users.find_one({"id": user_id})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Check if user is FREE
+        if user.get("is_free", False):
+            return {"can_download": True, "reason": "free_user"}
+        
+        # Check if payment exists for this analysis
+        payment = await db.payments.find_one({
+            "user_id": user_id,
+            "analysis_id": analysis_id,
+            "status": "completed"
+        })
+        
+        if payment:
+            return {"can_download": True, "reason": "payment_completed"}
+        
+        return {"can_download": False, "reason": "payment_required"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/users/{user_id}/analyze-resume")
 async def analyze_resume(user_id: str, request: ResumeAnalysisRequest):
     """Analyze resume against job description using AI"""
