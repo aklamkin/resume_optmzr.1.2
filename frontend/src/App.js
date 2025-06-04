@@ -18,7 +18,80 @@ function App() {
   const [codeStatus, setCodeStatus] = useState('');
   const [downloadEligibility, setDownloadEligibility] = useState(null);
 
-  // Create a new user account
+  // Check relationship code
+  const checkRelationshipCode = async (code) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/relationship-codes/check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to check code');
+      return await response.json();
+    } catch (error) {
+      console.error('Error checking relationship code:', error);
+      return { valid: false, message: 'Error checking code' };
+    }
+  };
+
+  // Apply relationship code
+  const applyRelationshipCode = async (userId, code) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/users/${userId}/apply-relationship-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to apply code');
+      return await response.json();
+    } catch (error) {
+      console.error('Error applying relationship code:', error);
+      return { success: false, message: 'Error applying code' };
+    }
+  };
+
+  // Check download eligibility
+  const checkDownloadEligibility = async (userId, analysisId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/users/${userId}/can-download/${analysisId}`);
+      if (!response.ok) throw new Error('Failed to check download eligibility');
+      return await response.json();
+    } catch (error) {
+      console.error('Error checking download eligibility:', error);
+      return { can_download: false, reason: 'error' };
+    }
+  };
+
+  // Process Apple Pay payment
+  const processApplePayPayment = async (userId, analysisId, paymentToken) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/apple-pay/process-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          payment_token: paymentToken,
+          amount: 1.00,
+          currency: 'USD',
+          user_id: userId,
+          analysis_id: analysisId,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Payment failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      throw error;
+    }
+  };
   const createUser = async (username, email) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/users`, {
