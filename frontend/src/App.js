@@ -292,6 +292,13 @@ function App() {
                     Download Resume
                   </button>
                   <button
+                    onClick={generateCoverLetter}
+                    disabled={isGeneratingCoverLetter}
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 text-sm disabled:opacity-50"
+                  >
+                    {isGeneratingCoverLetter ? 'Generating...' : 'Generate Cover Letter'}
+                  </button>
+                  <button
                     onClick={resetForm}
                     className="bg-gray-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-700 text-sm"
                   >
