@@ -161,11 +161,8 @@ function App() {
       if (!response.ok) throw new Error('Cover letter generation failed');
 
       const result = await response.json();
-      if (selectedVersion === 'short') {
-        setCoverLetterShort(result.cover_letter);
-      } else {
-        setCoverLetterLong(result.cover_letter);
-      }
+      setCoverLetterShort(result.short_version || '');
+      setCoverLetterLong(result.long_version || '');
       setShowCoverLetter(true);
     } catch (error) {
       console.error('Error generating cover letter:', error);
