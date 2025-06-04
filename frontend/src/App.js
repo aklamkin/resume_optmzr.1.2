@@ -214,6 +214,12 @@ function App() {
     setSelectedRating(null);
   };
 
+  // Check if keyword exists in resume
+  const isKeywordInResume = (keyword) => {
+    const resumeToCheck = optimizedResume || resumeText;
+    return resumeToCheck.toLowerCase().includes(keyword.toLowerCase());
+  };
+
   // Parse analysis data safely
   const getAnalysisData = () => {
     if (!analysisResult?.analysis) return null;
