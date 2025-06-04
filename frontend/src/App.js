@@ -757,7 +757,7 @@ function App() {
                 <h3 className="text-lg font-semibold mb-4 text-gray-900">Original Resume</h3>
                 <div className="bg-gray-50 p-4 rounded border h-80 overflow-y-auto">
                   <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
-                    {resumeText}
+                    {analysisResult?.original_resume || resumeText || "No resume content available"}
                   </pre>
                 </div>
               </div>
