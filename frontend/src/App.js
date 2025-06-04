@@ -507,11 +507,50 @@ function App() {
 
   // Admin Panel Component
   const AdminPanel = () => {
+    const [editingConfig, setEditingConfig] = useState(false);
+    const [configChanges, setConfigChanges] = useState({});
+
     useEffect(() => {
       if (currentView === 'admin') {
         loadAdminData();
       }
     }, [currentView]);
+
+    const handleConfigSave = async () => {
+      try {
+        const updatedConfig = { ...aiConfig, ...configChanges };
+        const response = await fetch(`${API_BASE_URL}/api/admin/config`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updatedConfig),
+        });
+
+        if (!response.ok) throw new Error('Failed to save configuration');
+
+        await loadAdminData();
+        setEditingConfig(false);
+        setConfigChanges({});
+        alert('Configuration saved successfully!');
+      } catch (error) {
+        console.error('Error saving configuration:', error);
+        alert('Failed to save configuration');
+      }
+    };
+
+    const handleConfigChange = (provider, field, value) => {
+      setConfigChanges(prev => ({
+        ...prev,
+        ai_configs: {
+          ...prev.ai_configs,
+          [provider]: {
+            ...prev.ai_configs?.[provider],
+            [field]: value
+          }
+        }
+      }));
+    };
 
     return (
       <div className="min-h-screen bg-gray-100">
