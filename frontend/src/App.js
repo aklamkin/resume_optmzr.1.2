@@ -588,12 +588,47 @@ function App() {
               {selectedRating.type === 'keywords' && selectedRating.items.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Important ATS Keywords:</h3>
+                  
+                  {/* Legend */}
+                  <div className="flex items-center space-x-4 mb-4 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-green-200 border border-green-400 rounded"></div>
+                      <span className="text-gray-600">Already in your resume</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-orange-200 border border-orange-400 rounded"></div>
+                      <span className="text-gray-600">Missing - should add</span>
+                    </div>
+                  </div>
+
                   <div className="flex flex-wrap gap-2">
-                    {selectedRating.items.map((keyword, index) => (
-                      <span key={index} className="bg-green-50 border border-green-200 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                        {keyword}
-                      </span>
-                    ))}
+                    {selectedRating.items.map((keyword, index) => {
+                      const exists = isKeywordInResume(keyword);
+                      return (
+                        <span 
+                          key={index} 
+                          className={`px-3 py-2 rounded-full text-sm font-medium border-2 ${
+                            exists 
+                              ? 'bg-green-50 border-green-300 text-green-800' 
+                              : 'bg-orange-50 border-orange-400 text-orange-900 font-bold shadow-md'
+                          }`}
+                        >
+                          {exists ? '✓ ' : '+ '}{keyword}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Summary */}
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-700">
+                      <span className="font-semibold">
+                        {selectedRating.items.filter(k => isKeywordInResume(k)).length} of {selectedRating.items.length}
+                      </span> keywords found in your resume. 
+                      <span className="font-semibold text-orange-700 ml-1">
+                        Focus on adding the missing keywords
+                      </span> to improve ATS compatibility.
+                    </p>
                   </div>
                 </div>
               )}
