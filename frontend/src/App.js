@@ -210,6 +210,8 @@ function App() {
     setCoverLetterLong('');
     setSelectedVersion('short');
     setShowCoverLetter(false);
+    setShowRatingPopup(false);
+    setSelectedRating(null);
   };
 
   // Parse analysis data safely
