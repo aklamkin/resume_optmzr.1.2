@@ -148,7 +148,34 @@ Format your response as JSON with the following structure:
 async def health_check():
     return {"status": "healthy"}
 
-@app.post("/api/users")
+@app.post("/api/auth/login")
+async def login_user(login_data: dict):
+    """Login user with email or username"""
+    try:
+        identifier = login_data.get("identifier", "").strip().lower()
+        
+        if not identifier:
+            raise HTTPException(status_code=400, detail="Email or username required")
+        
+        # Try to find user by email first, then by username
+        user = await db.users.find_one({
+            "$or": [
+                {"email": identifier},
+                {"username": {"$regex": f"^{identifier}$", "$options": "i"}}
+            ]
+        })
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Remove MongoDB _id from response
+        user.pop("_id", None)
+        return {"success": True, "user": user, "message": "Login successful"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 async def create_user(user: UserCreate):
     """Create a new user account"""
     try:
