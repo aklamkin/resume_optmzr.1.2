@@ -435,13 +435,37 @@ function App() {
           <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900">Generated Cover Letter</h2>
+              <div className="flex items-center space-x-4">
+                <h2 className="text-2xl font-bold text-gray-900">Generated Cover Letter</h2>
+                <div className="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setSelectedVersion('short')}
+                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                      selectedVersion === 'short'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Short (~250 words)
+                  </button>
+                  <button
+                    onClick={() => setSelectedVersion('long')}
+                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                      selectedVersion === 'long'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Long (Full page)
+                  </button>
+                </div>
+              </div>
               <div className="flex space-x-3">
                 <button
                   onClick={downloadCoverLetter}
                   className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 text-sm"
                 >
-                  Download
+                  Download {selectedVersion === 'short' ? 'Short' : 'Long'}
                 </button>
                 <button
                   onClick={() => setShowCoverLetter(false)}
