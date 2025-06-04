@@ -178,7 +178,8 @@ function App() {
   // Download cover letter
   const downloadCoverLetter = () => {
     const element = document.createElement('a');
-    const file = new Blob([coverLetter], { type: 'text/plain' });
+    const coverLetterText = selectedVersion === 'short' ? coverLetterShort : coverLetterLong;
+    const file = new Blob([coverLetterText], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
     element.download = 'cover_letter.txt';
     document.body.appendChild(element);
