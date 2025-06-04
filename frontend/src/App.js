@@ -136,7 +136,49 @@ function App() {
     setAppliedSuggestions(newApplied);
   };
 
-  // Download resume
+  // Generate cover letter
+  const generateCoverLetter = async () => {
+    if (!jobDescription.trim() || !resumeText.trim()) {
+      alert('Resume and job description are required to generate a cover letter');
+      return;
+    }
+
+    setIsGeneratingCoverLetter(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/generate-cover-letter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          job_description: jobDescription,
+          resume_text: optimizedResume || resumeText, // Use optimized version if available
+        }),
+      });
+
+      if (!response.ok) throw new Error('Cover letter generation failed');
+
+      const result = await response.json();
+      setCoverLetter(result.cover_letter);
+      setShowCoverLetter(true);
+    } catch (error) {
+      console.error('Error generating cover letter:', error);
+      alert('Cover letter generation failed. Please try again.');
+    } finally {
+      setIsGeneratingCoverLetter(false);
+    }
+  };
+
+  // Download cover letter
+  const downloadCoverLetter = () => {
+    const element = document.createElement('a');
+    const file = new Blob([coverLetter], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = 'cover_letter.txt';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
   const downloadResume = () => {
     const element = document.createElement('a');
     const file = new Blob([optimizedResume], { type: 'text/plain' });
