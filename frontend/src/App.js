@@ -488,7 +488,10 @@ function App() {
             {/* Modal Footer */}
             <div className="p-4 border-t border-gray-200 bg-gray-50 text-center">
               <p className="text-sm text-gray-600">
-                Review and customize this cover letter as needed before sending
+                {selectedVersion === 'short' 
+                  ? 'Concise version perfect for quick applications and online forms'
+                  : 'Comprehensive version with detailed examples and full context'
+                } • Review and customize before sending
               </p>
             </div>
           </div>
