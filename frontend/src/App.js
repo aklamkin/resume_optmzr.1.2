@@ -1,160 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './App.css';
 
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
 function App() {
-  const [currentView, setCurrentView] = useState('landing');
-  const [currentUser, setCurrentUser] = useState(null);
   const [jobDescription, setJobDescription] = useState('');
   const [resumeText, setResumeText] = useState('');
   const [analysisResult, setAnalysisResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [users, setUsers] = useState([]);
-  const [aiConfig, setAiConfig] = useState(null);
-  const [relationshipCodes, setRelationshipCodes] = useState([]);
-  const [showCodeInput, setShowCodeInput] = useState(false);
-  const [relationshipCode, setRelationshipCode] = useState('');
-  const [codeStatus, setCodeStatus] = useState('');
-  const [downloadEligibility, setDownloadEligibility] = useState(null);
-
-  // Check relationship code
-  const checkRelationshipCode = async (code) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/relationship-codes/check`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code }),
-      });
-      
-      if (!response.ok) throw new Error('Failed to check code');
-      return await response.json();
-    } catch (error) {
-      console.error('Error checking relationship code:', error);
-      return { valid: false, message: 'Error checking code' };
-    }
-  };
-
-  // Apply relationship code
-  const applyRelationshipCode = async (userId, code) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/users/${userId}/apply-relationship-code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code }),
-      });
-      
-      if (!response.ok) throw new Error('Failed to apply code');
-      return await response.json();
-    } catch (error) {
-      console.error('Error applying relationship code:', error);
-      return { success: false, message: 'Error applying code' };
-    }
-  };
-
-  // Check download eligibility
-  const checkDownloadEligibility = async (userId, analysisId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/users/${userId}/can-download/${analysisId}`);
-      if (!response.ok) throw new Error('Failed to check download eligibility');
-      return await response.json();
-    } catch (error) {
-      console.error('Error checking download eligibility:', error);
-      return { can_download: false, reason: 'error' };
-    }
-  };
-
-  // Process Apple Pay payment
-  const processApplePayPayment = async (userId, analysisId, paymentToken) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/apple-pay/process-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          payment_token: paymentToken,
-          amount: 1.00,
-          currency: 'USD',
-          user_id: userId,
-          analysis_id: analysisId,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Payment failed');
-      return await response.json();
-    } catch (error) {
-      console.error('Error processing payment:', error);
-      throw error;
-    }
-  };
-  // Login user
-  const loginUser = async (identifier) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ identifier }),
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail);
-      }
-      
-      const result = await response.json();
-      setCurrentUser(result.user);
-      setCurrentView('dashboard');
-      return result.user;
-    } catch (error) {
-      console.error('Error logging in:', error);
-      throw error;
-    }
-  };
-
-  const createUser = async (username, email) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, email }),
-      });
-      
-      if (!response.ok) throw new Error('Failed to create user');
-      
-      const result = await response.json();
-      
-      // Get the full user data
-      const userResponse = await fetch(`${API_BASE_URL}/api/users/${result.user_id}`);
-      const userData = await userResponse.json();
-      
-      setCurrentUser(userData);
-      setCurrentView('dashboard');
-      return userData;
-    } catch (error) {
-      console.error('Error creating user:', error);
-      throw error;
-    }
-  };
+  const [appliedSuggestions, setAppliedSuggestions] = useState(new Set());
+  const [optimizedResume, setOptimizedResume] = useState('');
 
   // Analyze resume
   const analyzeResume = async () => {
-    if (!currentUser || !jobDescription.trim() || !resumeText.trim()) {
+    if (!jobDescription.trim() || !resumeText.trim()) {
       alert('Please fill in both job description and resume text');
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/users/${currentUser.id}/analyze-resume`, {
+      const response = await fetch(`${API_BASE_URL}/api/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -169,7 +35,7 @@ function App() {
 
       const result = await response.json();
       setAnalysisResult(result);
-      setCurrentView('results');
+      setOptimizedResume(resumeText); // Start with original resume
     } catch (error) {
       console.error('Error analyzing resume:', error);
       alert('Analysis failed. Please try again.');
@@ -178,1079 +44,229 @@ function App() {
     }
   };
 
-  // Load admin data
-  const loadAdminData = async () => {
+  // Apply or remove suggestion
+  const toggleSuggestion = (index, suggestion) => {
+    const newApplied = new Set(appliedSuggestions);
+    
+    if (appliedSuggestions.has(index)) {
+      // Remove suggestion
+      newApplied.delete(index);
+      if (suggestion.current_text) {
+        setOptimizedResume(prev => prev.replace(suggestion.suggested_text, suggestion.current_text));
+      }
+    } else {
+      // Apply suggestion
+      newApplied.add(index);
+      if (suggestion.current_text) {
+        setOptimizedResume(prev => prev.replace(suggestion.current_text, suggestion.suggested_text));
+      } else {
+        // Add new content
+        setOptimizedResume(prev => `${prev}\n\n${suggestion.suggested_text}`);
+      }
+    }
+    
+    setAppliedSuggestions(newApplied);
+  };
+
+  // Download resume
+  const downloadResume = () => {
+    const element = document.createElement('a');
+    const file = new Blob([optimizedResume], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = 'optimized_resume.txt';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
+  // Reset form
+  const resetForm = () => {
+    setJobDescription('');
+    setResumeText('');
+    setAnalysisResult(null);
+    setAppliedSuggestions(new Set());
+    setOptimizedResume('');
+  };
+
+  // Parse suggestions safely
+  const getSuggestions = () => {
+    if (!analysisResult?.analysis) return [];
+    
     try {
-      // Load users
-      const usersResponse = await fetch(`${API_BASE_URL}/api/admin/users`);
-      const usersData = await usersResponse.json();
-      setUsers(usersData.users);
-
-      // Load AI config
-      const configResponse = await fetch(`${API_BASE_URL}/api/admin/config`);
-      const configData = await configResponse.json();
-      setAiConfig(configData);
-
-      // Load relationship codes
-      const codesResponse = await fetch(`${API_BASE_URL}/api/admin/relationship-codes`);
-      const codesData = await codesResponse.json();
-      setRelationshipCodes(codesData.codes);
+      let parsed;
+      if (typeof analysisResult.analysis === 'string') {
+        parsed = JSON.parse(analysisResult.analysis);
+      } else {
+        parsed = analysisResult.analysis;
+      }
+      return parsed.suggestions || [];
     } catch (error) {
-      console.error('Error loading admin data:', error);
+      console.error('Error parsing suggestions:', error);
+      return [];
     }
   };
 
-  // Update user status (admin)
-  const updateUserStatus = async (userId, isFreee) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ is_free: isFreee }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update user status');
-      
-      // Reload users
-      await loadAdminData();
-    } catch (error) {
-      console.error('Error updating user status:', error);
-      alert('Failed to update user status');
-    }
-  };
-
-  // Landing Page Component
-  const LandingPage = () => (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Hero Section */}
-      <div className="container mx-auto px-6 py-20">
-        <div className="text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            AI-Powered Resume Optimization
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Transform your resume in seconds with cutting-edge AI analysis. Match any job description perfectly and beat ATS systems every time.
-          </p>
-          <div className="space-y-4 mb-12">
-            <div className="flex items-center justify-center space-x-2 text-green-600">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span>AI-powered analysis in seconds</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2 text-green-600">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span>ATS-optimized suggestions</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2 text-green-600">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span>Only $1 per optimized resume</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2 text-blue-600">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span>Have a relationship code? Get FREE access!</span>
-            </div>
-          </div>
-          
-          <button
-            onClick={() => setCurrentView('signup')}
-            className="bg-indigo-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-indigo-700 transition-colors shadow-lg"
-          >
-            Get Started Now
-          </button>
-        </div>
-
-        {/* Features Section */}
-        <div className="mt-20 grid md:grid-cols-3 gap-8">
-          <div className="bg-white p-8 rounded-xl shadow-lg">
-            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold mb-3">Lightning Fast</h3>
-            <p className="text-gray-600">Get your optimized resume in under 30 seconds with our advanced AI engine.</p>
-          </div>
-          
-          <div className="bg-white p-8 rounded-xl shadow-lg">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold mb-3">ATS Optimized</h3>
-            <p className="text-gray-600">Beat automated screening systems with keyword optimization and formatting.</p>
-          </div>
-          
-          <div className="bg-white p-8 rounded-xl shadow-lg">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold mb-3">Affordable</h3>
-            <p className="text-gray-600">Just $1 per download with Apple Pay. No subscriptions, no hidden fees.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Signup Component
-  const SignupForm = () => {
-    const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [isLoginMode, setIsLoginMode] = useState(false);
-    const [identifier, setIdentifier] = useState('');
-
-    const handleLogin = async (e) => {
-      e.preventDefault();
-      if (!identifier.trim()) {
-        alert('Please enter your email or username');
-        return;
-      }
-
-      setLoading(true);
-      try {
-        await loginUser(identifier);
-      } catch (error) {
-        alert(`Login failed: ${error.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const handleSignup = async (e) => {
-      e.preventDefault();
-      if (!username.trim() || !email.trim()) {
-        alert('Please fill in all fields');
-        return;
-      }
-
-      setLoading(true);
-      try {
-        await createUser(username, email);
-      } catch (error) {
-        alert('Failed to create account. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-        <div className="max-w-md w-full space-y-8">
-          <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              {isLoginMode ? 'Welcome back!' : 'Create your account'}
-            </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              {isLoginMode ? 'Log in to access your resume analyses' : 'Start optimizing your resume today'}
-            </p>
-          </div>
-
-          {isLoginMode ? (
-            <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-              <div>
-                <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
-                  Email or Username
-                </label>
-                <input
-                  id="identifier"
-                  type="text"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Enter your email or username"
-                  required
-                />
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-                >
-                  {loading ? 'Logging in...' : 'Log In'}
-                </button>
-              </div>
-
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => setIsLoginMode(false)}
-                  className="text-indigo-600 hover:text-indigo-500 text-sm"
-                >
-                  Don't have an account? Sign up
-                </button>
-              </div>
-            </form>
-          ) : (
-            <form className="mt-8 space-y-6" onSubmit={handleSignup}>
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                    Username
-                  </label>
-                  <input
-                    id="username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-                >
-                  {loading ? 'Creating Account...' : 'Create Account'}
-                </button>
-              </div>
-
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => setIsLoginMode(true)}
-                  className="text-indigo-600 hover:text-indigo-500 text-sm"
-                >
-                  Already have an account? Log in
-                </button>
-              </div>
-            </form>
-          )}
-
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setCurrentView('landing')}
-              className="text-indigo-600 hover:text-indigo-500 text-sm"
-            >
-              Back to Home
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Dashboard Component
-  const Dashboard = () => (
+  return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Resume Optimizer</h1>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-700">{currentUser?.username}</span>
-                {currentUser?.is_free && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    FREE
-                  </span>
-                )}
-                {currentUser?.relationship_code && (
-                  <span className="text-xs text-gray-500">
-                    Code: {currentUser.relationship_code}
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => setCurrentView('admin')}
-                className="text-indigo-600 hover:text-indigo-800 text-sm"
-              >
-                Admin Panel
-              </button>
-            </div>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900">AI Resume Optimizer</h1>
+          <p className="text-gray-600 mt-2">Free tool to optimize your resume for any job description</p>
         </div>
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        <div className="max-w-4xl mx-auto">
-          
-          {/* Relationship Code Section */}
-          {!currentUser?.is_free && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-blue-900">Have a Relationship Code?</h3>
-                <button
-                  onClick={() => setShowCodeInput(!showCodeInput)}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                >
-                  {showCodeInput ? 'Cancel' : 'Enter Code'}
-                </button>
-              </div>
+        {!analysisResult ? (
+          /* Input Form */
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-lg shadow-lg p-8">
+              <h2 className="text-2xl font-bold mb-6 text-gray-900">Optimize Your Resume</h2>
               
-              {showCodeInput && (
-                <div className="space-y-4">
-                  <div>
-                    <input
-                      type="text"
-                      value={relationshipCode}
-                      onChange={(e) => setRelationshipCode(e.target.value.toUpperCase())}
-                      placeholder="Enter 6-character code (e.g., ABC123)"
-                      maxLength={6}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase"
-                    />
-                  </div>
-                  <button
-                    onClick={async () => {
-                      if (relationshipCode.length !== 6) {
-                        setCodeStatus('Code must be 6 characters');
-                        return;
-                      }
-                      
-                      setCodeStatus('Checking...');
-                      const result = await applyRelationshipCode(currentUser.id, relationshipCode);
-                      
-                      if (result.success) {
-                        setCodeStatus('Success! Your account is now FREE.');
-                        // Refresh user data
-                        const userResponse = await fetch(`${API_BASE_URL}/api/users/${currentUser.id}`);
-                        const userData = await userResponse.json();
-                        setCurrentUser(userData);
-                        setShowCodeInput(false);
-                        setRelationshipCode('');
-                      } else {
-                        setCodeStatus(result.message);
-                      }
-                    }}
-                    disabled={relationshipCode.length !== 6}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    Apply Code
-                  </button>
-                  {codeStatus && (
-                    <p className={`text-sm ${codeStatus.includes('Success') ? 'text-green-600' : 'text-red-600'}`}>
-                      {codeStatus}
-                    </p>
-                  )}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Job Description *
+                  </label>
+                  <textarea
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    placeholder="Paste the job description here..."
+                    className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    required
+                  />
                 </div>
-              )}
-            </div>
-          )}
 
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <h2 className="text-2xl font-bold mb-6">Optimize Your Resume</h2>
-            
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Job Description *
-                </label>
-                <textarea
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                  placeholder="Paste the job description here..."
-                  className="w-full h-40 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
-                  required
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Your Resume *
+                  </label>
+                  <textarea
+                    value={resumeText}
+                    onChange={(e) => setResumeText(e.target.value)}
+                    placeholder="Paste your current resume text here..."
+                    className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    required
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Current Resume Text *
-                </label>
-                <textarea
-                  value={resumeText}
-                  onChange={(e) => setResumeText(e.target.value)}
-                  placeholder="Paste your current resume text here..."
-                  className="w-full h-60 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
-                  required
-                />
-              </div>
-
-              <button
-                onClick={analyzeResume}
-                disabled={isLoading || !jobDescription.trim() || !resumeText.trim()}
-                className="w-full bg-indigo-600 text-white py-3 px-4 rounded-md font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Analyzing...' : 'Analyze Resume'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Results Component - Simplified and stable version
-  const ResultsView = () => {
-    const [suggestions, setSuggestions] = useState([]);
-    const [rawAnalysis, setRawAnalysis] = useState('');
-
-    useEffect(() => {
-      if (analysisResult?.analysis) {
-        try {
-          let parsed;
-          let analysisText = analysisResult.analysis;
-          
-          // Store raw analysis for debugging
-          setRawAnalysis(analysisText);
-          
-          if (typeof analysisText === 'string') {
-            parsed = JSON.parse(analysisText);
-          } else {
-            parsed = analysisText;
-          }
-          setSuggestions(parsed.suggestions || []);
-        } catch (error) {
-          console.error('Error parsing analysis result:', error);
-          setSuggestions([
-            {
-              section: "general",
-              current_text: null,
-              suggested_text: "AI analysis completed successfully. The system provided detailed suggestions for resume improvement.",
-              reason: "Analysis completed - check console for details"
-            }
-          ]);
-        }
-      }
-
-      // Check download eligibility
-      if (analysisResult?.analysis_id && currentUser?.id) {
-        checkDownloadEligibility(currentUser.id, analysisResult.analysis_id)
-          .then(setDownloadEligibility);
-      }
-    }, [analysisResult]);
-
-    // Apple Pay Component
-    const ApplePayButton = ({ onSuccess, onError }) => {
-      const handleApplePayClick = async () => {
-        // Check if Apple Pay is available
-        if (!window.ApplePaySession || !ApplePaySession.canMakePayments()) {
-          onError('Apple Pay is not available on this device/browser');
-          return;
-        }
-
-        try {
-          const paymentRequest = {
-            countryCode: 'US',
-            currencyCode: 'USD',
-            supportedNetworks: ['visa', 'masterCard', 'amex', 'discover'],
-            merchantCapabilities: ['supports3DS'],
-            total: {
-              label: 'Resume Download',
-              amount: '1.00',
-              type: 'final'
-            }
-          };
-
-          const session = new ApplePaySession(3, paymentRequest);
-
-          session.onvalidatemerchant = async (event) => {
-            try {
-              const response = await fetch(`${API_BASE_URL}/api/apple-pay/validate-merchant`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ validationURL: event.validationURL })
-              });
-              const merchantSession = await response.json();
-              session.completeMerchantValidation(merchantSession);
-            } catch (error) {
-              session.abort();
-              onError('Payment validation failed');
-            }
-          };
-
-          session.onpaymentauthorized = async (event) => {
-            try {
-              const result = await processApplePayPayment(
-                currentUser.id,
-                analysisResult.analysis_id,
-                event.payment.token
-              );
-
-              if (result.success) {
-                session.completePayment(ApplePaySession.STATUS_SUCCESS);
-                onSuccess(result);
-              } else {
-                session.completePayment(ApplePaySession.STATUS_FAILURE);
-                onError(result.message || 'Payment failed');
-              }
-            } catch (error) {
-              session.completePayment(ApplePaySession.STATUS_FAILURE);
-              onError('Payment processing failed');
-            }
-          };
-
-          session.oncancel = () => onError('Payment cancelled');
-          session.begin();
-
-        } catch (error) {
-          onError('Failed to initialize Apple Pay');
-        }
-      };
-
-      return (
-        <button
-          onClick={handleApplePayClick}
-          className="bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 flex items-center space-x-2"
-        >
-          <span>🍎</span>
-          <span>Pay $1 with Apple Pay</span>
-        </button>
-      );
-    };
-
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow">
-          <div className="container mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-gray-900">Analysis Results</h1>
-              <div className="flex items-center space-x-4">
+              <div className="mt-6 text-center">
                 <button
-                  onClick={() => setCurrentView('dashboard')}
-                  className="text-indigo-600 hover:text-indigo-800"
+                  onClick={analyzeResume}
+                  disabled={isLoading || !jobDescription.trim() || !resumeText.trim()}
+                  className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Back to Dashboard
+                  {isLoading ? 'Analyzing...' : 'Analyze Resume'}
                 </button>
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-700">{currentUser?.username}</span>
-                  {currentUser?.is_free && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      FREE
-                    </span>
-                  )}
-                </div>
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          /* Results View */
+          <div className="max-w-7xl mx-auto">
+            {/* Header with actions */}
+            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Analysis Results</h2>
+                <div className="space-x-4">
+                  <button
+                    onClick={downloadResume}
+                    className="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700"
+                  >
+                    Download Resume
+                  </button>
+                  <button
+                    onClick={resetForm}
+                    className="bg-gray-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-700"
+                  >
+                    Start Over
+                  </button>
+                </div>
+              </div>
+            </div>
 
-        <div className="container mx-auto px-6 py-8">
-          <div className="max-w-6xl mx-auto">
-            {/* Resume Comparison */}
-            <div className="grid lg:grid-cols-2 gap-8">
+            <div className="grid lg:grid-cols-3 gap-6">
               {/* Original Resume */}
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <h3 className="text-lg font-semibold mb-4 text-gray-900">Original Resume</h3>
-                <div className="bg-gray-50 p-4 rounded border h-80 overflow-y-auto">
+                <div className="bg-gray-50 p-4 rounded border h-96 overflow-y-auto">
                   <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
-                    {analysisResult?.original_resume || resumeText || "No resume content available"}
+                    {resumeText}
                   </pre>
                 </div>
               </div>
 
               {/* AI Suggestions */}
               <div className="bg-white rounded-lg shadow-lg p-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900">AI Suggestions ({suggestions.length})</h3>
-                <div className="bg-blue-50 p-4 rounded border h-80 overflow-y-auto">
-                  {suggestions.length > 0 ? (
-                    <div className="space-y-3">
-                      {suggestions.map((suggestion, index) => (
-                        <div key={`suggestion-${index}`} className="bg-white p-3 rounded border border-gray-200">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-medium text-indigo-600 uppercase bg-indigo-50 px-2 py-1 rounded">
-                              {suggestion.section || 'general'}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const text = `Section: ${suggestion.section}\n\nSuggestion: ${suggestion.suggested_text}\n\nReason: ${suggestion.reason}`;
-                                navigator.clipboard.writeText(text).then(() => {
-                                  alert('Suggestion copied to clipboard!');
-                                }).catch(() => {
-                                  alert(text);
-                                });
-                              }}
-                              className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200 transition-colors border-0"
-                            >
-                              Copy
-                            </button>
-                          </div>
-                          
-                          {suggestion.current_text && (
-                            <div className="mb-2">
-                              <p className="text-xs text-gray-500 mb-1">Current:</p>
-                              <p className="text-xs text-gray-700 bg-red-50 p-2 rounded border">
-                                {suggestion.current_text}
-                              </p>
-                            </div>
-                          )}
-                          
-                          <div className="mb-2">
-                            <p className="text-xs text-gray-500 mb-1">Suggested:</p>
-                            <p className="text-xs text-gray-700 bg-green-50 p-2 rounded border">
-                              {suggestion.suggested_text}
-                            </p>
-                          </div>
-                          
-                          <p className="text-xs text-gray-600 italic">
-                            {suggestion.reason}
+                <h3 className="text-lg font-semibold mb-4 text-gray-900">
+                  AI Suggestions ({getSuggestions().length})
+                </h3>
+                <div className="space-y-3 h-96 overflow-y-auto">
+                  {getSuggestions().map((suggestion, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-blue-600 uppercase bg-blue-50 px-2 py-1 rounded">
+                          {suggestion.section || 'general'}
+                        </span>
+                        <button
+                          onClick={() => toggleSuggestion(index, suggestion)}
+                          className={`text-xs px-3 py-1 rounded font-medium ${
+                            appliedSuggestions.has(index)
+                              ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                          }`}
+                        >
+                          {appliedSuggestions.has(index) ? 'Applied ✓' : 'Apply'}
+                        </button>
+                      </div>
+                      
+                      {suggestion.current_text && (
+                        <div className="mb-2">
+                          <p className="text-xs text-gray-500 mb-1">Current:</p>
+                          <p className="text-xs text-gray-700 bg-red-50 p-2 rounded border">
+                            {suggestion.current_text}
                           </p>
                         </div>
-                      ))}
+                      )}
+                      
+                      <div className="mb-2">
+                        <p className="text-xs text-gray-500 mb-1">Suggested:</p>
+                        <p className="text-xs text-gray-700 bg-green-50 p-2 rounded border">
+                          {suggestion.suggested_text}
+                        </p>
+                      </div>
+                      
+                      <p className="text-xs text-gray-600 italic">
+                        {suggestion.reason}
+                      </p>
                     </div>
-                  ) : (
-                    <div className="text-center text-gray-500 text-sm">
-                      No suggestions available. Try analyzing your resume first.
-                    </div>
-                  )}
+                  ))}
                 </div>
               </div>
-            </div>
 
-            {/* Download Section */}
-            <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
-              <div className="text-center">
-                <h3 className="text-lg font-semibold mb-4">Download Optimized Resume</h3>
-                
-                {downloadEligibility?.can_download ? (
-                  <div className="space-y-4">
-                    {downloadEligibility.reason === 'free_user' && (
-                      <p className="text-green-600 font-medium">✨ FREE Account - No Payment Required!</p>
-                    )}
-                    {downloadEligibility.reason === 'payment_completed' && (
-                      <p className="text-green-600 font-medium">✅ Payment Completed - Ready to Download!</p>
-                    )}
-                    <button 
-                      onClick={() => {
-                        // For now, just show success message since we don't have actual file generation
-                        alert('Resume download started! Files would be generated and downloaded in production.');
-                      }}
-                      className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700"
-                    >
-                      Download Resume (DOCX + PDF)
-                    </button>
-                  </div>
-                ) : downloadEligibility === null ? (
-                  <div className="text-gray-500">
-                    <p>Checking download eligibility...</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <p className="text-gray-600">Download your optimized resume for $1</p>
-                    <button 
-                      onClick={() => {
-                        alert('Apple Pay integration would be triggered here. For demo, payment is simulated.');
-                      }}
-                      className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700"
-                    >
-                      Pay $1 & Download (Apple Pay)
-                    </button>
-                  </div>
-                )}</div>
-              {/* Debug info for development */}
-              {rawAnalysis && (
-                <div className="mt-4 p-4 bg-gray-100 rounded">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Debug - Raw Analysis:</h4>
-                  <pre className="text-xs text-gray-600 whitespace-pre-wrap overflow-auto max-h-32">
-                    {typeof rawAnalysis === 'string' ? rawAnalysis : JSON.stringify(rawAnalysis, null, 2)}
+              {/* Optimized Resume */}
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900">Optimized Resume</h3>
+                <div className="bg-green-50 p-4 rounded border h-96 overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
+                    {optimizedResume}
                   </pre>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Admin Panel Component
-  const AdminPanel = () => {
-    const [editingConfig, setEditingConfig] = useState(false);
-    const [configChanges, setConfigChanges] = useState({});
-
-    useEffect(() => {
-      if (currentView === 'admin') {
-        loadAdminData();
-      }
-    }, [currentView]);
-
-    const handleConfigSave = async () => {
-      try {
-        const updatedConfig = { ...aiConfig, ...configChanges };
-        const response = await fetch(`${API_BASE_URL}/api/admin/config`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updatedConfig),
-        });
-
-        if (!response.ok) throw new Error('Failed to save configuration');
-
-        await loadAdminData();
-        setEditingConfig(false);
-        setConfigChanges({});
-        alert('Configuration saved successfully!');
-      } catch (error) {
-        console.error('Error saving configuration:', error);
-        alert('Failed to save configuration');
-      }
-    };
-
-    const handleConfigChange = (provider, field, value) => {
-      setConfigChanges(prev => ({
-        ...prev,
-        ai_configs: {
-          ...prev.ai_configs,
-          [provider]: {
-            ...prev.ai_configs?.[provider],
-            [field]: value
-          }
-        }
-      }));
-    };
-
-    return (
-      <div className="min-h-screen bg-gray-100">
-        <div className="bg-gray-800 shadow">
-          <div className="container mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
-              <button
-                onClick={() => setCurrentView('dashboard')}
-                className="text-gray-300 hover:text-white"
-              >
-                Back to Dashboard
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="container mx-auto px-6 py-8">
-          {/* Relationship Code Management */}
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4">Relationship Code Management</h2>
-            
-            {/* Create New Code */}
-            <div className="mb-6 p-4 bg-gray-50 rounded">
-              <h3 className="text-lg font-medium mb-3">Create New Relationship Code</h3>
-              <div className="flex space-x-4">
-                <input
-                  type="text"
-                  placeholder="6-char code (e.g., ABC123)"
-                  maxLength={6}
-                  className="px-3 py-2 border border-gray-300 rounded-md uppercase"
-                  id="new-code-input"
-                />
-                <input
-                  type="text"
-                  placeholder="Description (optional)"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-                  id="new-code-description"
-                />
-                <button 
-                  onClick={async () => {
-                    const codeInput = document.getElementById('new-code-input');
-                    const descInput = document.getElementById('new-code-description');
-                    
-                    if (codeInput.value.length !== 6) {
-                      alert('Code must be 6 characters');
-                      return;
-                    }
-                    
-                    try {
-                      const response = await fetch(`${API_BASE_URL}/api/admin/relationship-codes`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          code: codeInput.value.toUpperCase(),
-                          description: descInput.value,
-                          is_active: true
-                        })
-                      });
-                      
-                      if (!response.ok) throw new Error('Failed to create code');
-                      
-                      alert('Relationship code created successfully!');
-                      codeInput.value = '';
-                      descInput.value = '';
-                      await loadAdminData();
-                    } catch (error) {
-                      alert('Error creating code: ' + error.message);
-                    }
-                  }}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-                >
-                  Create Code
-                </button>
               </div>
             </div>
-
-            {/* Existing Codes */}
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Code
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Usage Count
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {relationshipCodes.map((code) => (
-                    <tr key={code.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-mono font-medium text-gray-900">
-                          {code.code}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {code.description || 'No description'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          code.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {code.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {code.usage_count || 0}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(code.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={async () => {
-                            try {
-                              const response = await fetch(`${API_BASE_URL}/api/admin/relationship-codes/${code.id}`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ is_active: !code.is_active })
-                              });
-                              
-                              if (!response.ok) throw new Error('Failed to update code');
-                              await loadAdminData();
-                            } catch (error) {
-                              alert('Error updating code: ' + error.message);
-                            }
-                          }}
-                          className={`${
-                            code.is_active 
-                              ? 'text-red-600 hover:text-red-900' 
-                              : 'text-green-600 hover:text-green-900'
-                          }`}
-                        >
-                          {code.is_active ? 'Deactivate' : 'Activate'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </div>
+        )}
+      </div>
 
-          {/* User Management */}
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4">User Management</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Relationship Code
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
-                    <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <span className="text-sm font-medium text-gray-900">
-                            {user.username}
-                          </span>
-                          {user.is_free && (
-                            <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              FREE
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {user.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          user.is_free ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {user.is_free ? 'FREE' : 'PAID'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {user.relationship_code || 'None'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => updateUserStatus(user.id, !user.is_free)}
-                          className={`${
-                            user.is_free 
-                              ? 'text-red-600 hover:text-red-900' 
-                              : 'text-green-600 hover:text-green-900'
-                          }`}
-                        >
-                          {user.is_free ? 'Make Paid' : 'Make Free'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* AI Configuration */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">AI Configuration</h2>
-            {aiConfig && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Default Provider
-                  </label>
-                  <select 
-                    value={configChanges.default_provider || aiConfig.default_provider || 'gemini'}
-                    onChange={(e) => setConfigChanges(prev => ({ ...prev, default_provider: e.target.value }))}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="gemini">Gemini</option>
-                    <option value="openai">OpenAI</option>
-                    <option value="perplexity">Perplexity</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">API Keys</h3>
-                    <button
-                      onClick={() => setEditingConfig(!editingConfig)}
-                      className="text-sm bg-indigo-100 text-indigo-800 px-3 py-1 rounded hover:bg-indigo-200"
-                    >
-                      {editingConfig ? 'Cancel' : 'Edit'}
-                    </button>
-                  </div>
-                  <div className="space-y-3">
-                    {Object.entries(aiConfig.ai_configs || {}).map(([provider, config]) => (
-                      <div key={provider} className="flex items-center space-x-4">
-                        <span className="w-20 text-sm font-medium text-gray-700 capitalize">
-                          {provider}:
-                        </span>
-                        <input
-                          type={editingConfig ? "text" : "password"}
-                          value={
-                            configChanges.ai_configs?.[provider]?.api_key !== undefined 
-                              ? configChanges.ai_configs[provider].api_key 
-                              : config.api_key || ''
-                          }
-                          onChange={(e) => handleConfigChange(provider, 'api_key', e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="API Key"
-                          disabled={!editingConfig}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {editingConfig && (
-                  <div className="flex space-x-4">
-                    <button 
-                      onClick={handleConfigSave}
-                      className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-                    >
-                      Save Configuration
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setEditingConfig(false);
-                        setConfigChanges({});
-                      }}
-                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+      {/* Footer */}
+      <div className="bg-white border-t mt-12">
+        <div className="container mx-auto px-6 py-4 text-center text-gray-600">
+          <p>Free AI-powered resume optimization tool</p>
         </div>
       </div>
-    );
-  };
-
-  // Main render logic
-  const renderCurrentView = () => {
-    switch (currentView) {
-      case 'landing':
-        return <LandingPage />;
-      case 'signup':
-        return <SignupForm />;
-      case 'dashboard':
-        return <Dashboard />;
-      case 'results':
-        return <ResultsView />;
-      case 'admin':
-        return <AdminPanel />;
-      default:
-        return <LandingPage />;
-    }
-  };
-
-  return <div className="App">{renderCurrentView()}</div>;
+    </div>
+  );
 }
 
 export default App;
