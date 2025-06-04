@@ -16,6 +16,11 @@ function App() {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeIndex, setResizeIndex] = useState(null);
   const containerRef = useRef(null);
+  
+  // Cover letter state
+  const [showCoverLetter, setShowCoverLetter] = useState(false);
+  const [coverLetter, setCoverLetter] = useState('');
+  const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
 
   // Handle panel resizing
   const handleMouseDown = useCallback((index) => (e) => {
