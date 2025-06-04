@@ -12,6 +12,11 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [aiConfig, setAiConfig] = useState(null);
+  const [relationshipCodes, setRelationshipCodes] = useState([]);
+  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [relationshipCode, setRelationshipCode] = useState('');
+  const [codeStatus, setCodeStatus] = useState('');
+  const [downloadEligibility, setDownloadEligibility] = useState(null);
 
   // Create a new user account
   const createUser = async (username, email) => {
