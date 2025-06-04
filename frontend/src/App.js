@@ -396,6 +396,69 @@ function App() {
 
       <div className="container mx-auto px-6 py-8">
         <div className="max-w-4xl mx-auto">
+          
+          {/* Relationship Code Section */}
+          {!currentUser?.is_free && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-blue-900">Have a Relationship Code?</h3>
+                <button
+                  onClick={() => setShowCodeInput(!showCodeInput)}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  {showCodeInput ? 'Cancel' : 'Enter Code'}
+                </button>
+              </div>
+              
+              {showCodeInput && (
+                <div className="space-y-4">
+                  <div>
+                    <input
+                      type="text"
+                      value={relationshipCode}
+                      onChange={(e) => setRelationshipCode(e.target.value.toUpperCase())}
+                      placeholder="Enter 6-character code (e.g., ABC123)"
+                      maxLength={6}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase"
+                    />
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (relationshipCode.length !== 6) {
+                        setCodeStatus('Code must be 6 characters');
+                        return;
+                      }
+                      
+                      setCodeStatus('Checking...');
+                      const result = await applyRelationshipCode(currentUser.id, relationshipCode);
+                      
+                      if (result.success) {
+                        setCodeStatus('Success! Your account is now FREE.');
+                        // Refresh user data
+                        const userResponse = await fetch(`${API_BASE_URL}/api/users/${currentUser.id}`);
+                        const userData = await userResponse.json();
+                        setCurrentUser(userData);
+                        setShowCodeInput(false);
+                        setRelationshipCode('');
+                      } else {
+                        setCodeStatus(result.message);
+                      }
+                    }}
+                    disabled={relationshipCode.length !== 6}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    Apply Code
+                  </button>
+                  {codeStatus && (
+                    <p className={`text-sm ${codeStatus.includes('Success') ? 'text-green-600' : 'text-red-600'}`}>
+                      {codeStatus}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="bg-white rounded-lg shadow-lg p-8">
             <h2 className="text-2xl font-bold mb-6">Optimize Your Resume</h2>
             
