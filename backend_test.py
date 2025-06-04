@@ -340,10 +340,48 @@ def main():
     if tester.test_create_user():
         tester.test_get_user()
     
+    # Test existing free user with TEST01 code
+    tester.test_existing_free_user()
+    
+    # Test relationship code endpoints
+    print("\n" + "=" * 50)
+    print("TESTING RELATIONSHIP CODE FEATURES")
+    print("=" * 50)
+    
+    # Test admin relationship code creation
+    tester.test_admin_create_relationship_code()
+    
+    # Test getting all relationship codes
+    tester.test_get_relationship_codes()
+    
+    # Test checking a relationship code
+    tester.test_check_relationship_code()
+    
+    # Test applying a relationship code to the user
+    tester.test_apply_relationship_code()
+    
+    # Test applying the existing TEST01 code
+    tester.test_existing_relationship_code()
+    
     # Test resume analysis
+    print("\n" + "=" * 50)
+    print("TESTING RESUME ANALYSIS & PAYMENT FEATURES")
+    print("=" * 50)
+    
     tester.test_analyze_resume()
     
+    # Test Apple Pay endpoints
+    tester.test_apple_pay_validate_merchant()
+    tester.test_apple_pay_process_payment()
+    
+    # Test download eligibility
+    tester.test_check_download_eligibility()
+    
     # Test admin endpoints
+    print("\n" + "=" * 50)
+    print("TESTING ADMIN FEATURES")
+    print("=" * 50)
+    
     tester.test_admin_get_users()
     tester.test_admin_get_config()
     tester.test_admin_update_user_status()
