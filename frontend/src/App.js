@@ -607,6 +607,8 @@ function App() {
   const ResultsView = () => {
     const [suggestions, setSuggestions] = useState([]);
     const [rawAnalysis, setRawAnalysis] = useState('');
+    const [appliedSuggestions, setAppliedSuggestions] = useState(new Set());
+    const [optimizedResume, setOptimizedResume] = useState('');
 
     useEffect(() => {
       if (analysisResult?.analysis) {
@@ -624,6 +626,9 @@ function App() {
             parsed = analysisText;
           }
           setSuggestions(parsed.suggestions || []);
+          
+          // Initialize optimized resume with original
+          setOptimizedResume(resumeText);
         } catch (error) {
           console.error('Error parsing analysis result:', error);
           console.log('Raw analysis:', analysisResult.analysis);
@@ -636,6 +641,7 @@ function App() {
               reason: "Raw analysis result available in console for debugging"
             }
           ]);
+          setOptimizedResume(resumeText);
         }
       }
 
@@ -644,7 +650,7 @@ function App() {
         checkDownloadEligibility(currentUser.id, analysisResult.analysis_id)
           .then(setDownloadEligibility);
       }
-    }, [analysisResult]);
+    }, [analysisResult, resumeText]);
 
     // Apple Pay Component
     const ApplePayButton = ({ onSuccess, onError }) => {
