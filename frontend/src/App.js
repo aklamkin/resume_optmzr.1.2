@@ -551,13 +551,6 @@ function App() {
       }
     }, [analysisResult]);
 
-      // Check download eligibility when analysis result is available
-      if (analysisResult?.analysis_id && currentUser?.id) {
-        checkDownloadEligibility(currentUser.id, analysisResult.analysis_id)
-          .then(setDownloadEligibility);
-      }
-    }, [analysisResult]);
-
     // Apple Pay Component
     const ApplePayButton = ({ onSuccess, onError }) => {
       const handleApplePayClick = async () => {
