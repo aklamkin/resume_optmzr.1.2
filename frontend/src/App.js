@@ -19,7 +19,9 @@ function App() {
   
   // Cover letter state
   const [showCoverLetter, setShowCoverLetter] = useState(false);
-  const [coverLetter, setCoverLetter] = useState('');
+  const [coverLetterShort, setCoverLetterShort] = useState('');
+  const [coverLetterLong, setCoverLetterLong] = useState('');
+  const [selectedVersion, setSelectedVersion] = useState('short'); // 'short' or 'long'
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
 
   // Handle panel resizing
