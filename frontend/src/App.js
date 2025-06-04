@@ -789,64 +789,62 @@ function App() {
 
         <div className="container mx-auto px-6 py-8">
           <div className="max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Original Resume */}
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900">Original Resume</h3>
-                <div className="bg-gray-50 p-4 rounded border h-96 overflow-y-auto">
-                  <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                    {resumeText}
-                  </pre>
-                </div>
-              </div>
-
-              {/* Optimized Resume */}
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900">Optimized Resume</h3>
-                <div className="bg-green-50 p-4 rounded border h-96 overflow-y-auto">
-                  <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                    {optimizedResume}
-                  </pre>
-                </div>
-              </div>
-            </div>
-
-            {/* Suggestions Panel */}
-            <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">AI Suggestions</h3>
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {suggestions.map((suggestion, index) => (
-                    <div key={index} className="border border-gray-200 rounded p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-indigo-600 uppercase">
-                          {suggestion.section}
-                        </span>
-                        <button
-                          onClick={() => applySuggestion(index)}
-                          className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200"
-                        >
-                          Apply
-                        </button>
+              {/* Resume Comparison */}
+              <div className="grid lg:grid-cols-2 gap-8">
+                {/* Original Resume */}
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900">Original Resume</h3>
+                  <div className="bg-gray-50 p-4 rounded border">
+                    <div className="h-80 overflow-y-auto">
+                      <div className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                        {resumeText}
                       </div>
-                      {suggestion.current_text && (
-                        <div className="mb-2">
-                          <p className="text-xs text-gray-500 mb-1">Current:</p>
-                          <p className="text-sm text-gray-700 bg-red-50 p-2 rounded">
-                            {suggestion.current_text}
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Suggestions */}
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900">AI Suggestions</h3>
+                  <div className="bg-blue-50 p-4 rounded border">
+                    <div className="h-80 overflow-y-auto space-y-4">
+                      {suggestions.map((suggestion, index) => (
+                        <div key={index} className="bg-white p-4 rounded border border-gray-200">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-medium text-indigo-600 uppercase bg-indigo-50 px-2 py-1 rounded">
+                              {suggestion.section}
+                            </span>
+                            <button
+                              onClick={() => {
+                                // Simple alert for now - no complex state management
+                                alert(`Suggestion for ${suggestion.section}: ${suggestion.suggested_text}`);
+                              }}
+                              className="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full hover:bg-green-200 transition-colors"
+                            >
+                              View
+                            </button>
+                          </div>
+                          {suggestion.current_text && (
+                            <div className="mb-2">
+                              <p className="text-xs text-gray-500 mb-1">Current:</p>
+                              <p className="text-sm text-gray-700 bg-red-50 p-2 rounded">
+                                {suggestion.current_text}
+                              </p>
+                            </div>
+                          )}
+                          <div className="mb-2">
+                            <p className="text-xs text-gray-500 mb-1">Suggested:</p>
+                            <p className="text-sm text-gray-700 bg-green-50 p-2 rounded">
+                              {suggestion.suggested_text}
+                            </p>
+                          </div>
+                          <p className="text-xs text-gray-600 italic">
+                            {suggestion.reason}
                           </p>
                         </div>
-                      )}
-                      <div className="mb-2">
-                        <p className="text-xs text-gray-500 mb-1">Suggested:</p>
-                        <p className="text-sm text-gray-700 bg-green-50 p-2 rounded">
-                          {suggestion.suggested_text}
-                        </p>
-                      </div>
-                      <p className="text-xs text-gray-600 italic">
-                        {suggestion.reason}
-                      </p>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
             </div>
