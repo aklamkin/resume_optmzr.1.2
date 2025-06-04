@@ -802,10 +802,21 @@ function App() {
                 </div>
               </div>
 
-              {/* Suggestions */}
+              {/* Optimized Resume */}
               <div className="bg-white rounded-lg shadow-lg p-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900">AI Suggestions</h3>
-                <div className="space-y-4 h-96 overflow-y-auto">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900">Optimized Resume</h3>
+                <div className="bg-green-50 p-4 rounded border h-96 overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm text-gray-700">
+                    {optimizedResume}
+                  </pre>
+                </div>
+              </div>
+            </div>
+
+            {/* Suggestions Panel */}
+            <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">AI Suggestions</h3>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
                   {suggestions.map((suggestion, index) => (
                     <div key={index} className="border border-gray-200 rounded p-4">
                       <div className="flex items-center justify-between mb-2">
