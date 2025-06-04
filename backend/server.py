@@ -275,7 +275,115 @@ async def get_user_analyses(user_id: str):
         "is_free": user.get("is_free", False)
     }
 
-# Admin Routes
+@app.post("/api/relationship-codes/check")
+async def check_relationship_code(code_check: RelationshipCodeCheck):
+    """Check if a relationship code is valid and active"""
+    try:
+        # Validate code format (6 chars, caps and numbers)
+        code = code_check.code.upper().strip()
+        if len(code) != 6 or not code.isalnum() or not code.isupper():
+            return {"valid": False, "message": "Invalid code format (must be 6 characters, uppercase letters and numbers)"}
+        
+        # Check if code exists and is active
+        rel_code = await db.relationship_codes.find_one({"code": code, "is_active": True})
+        if rel_code:
+            return {"valid": True, "message": "Valid relationship code", "description": rel_code.get("description", "")}
+        else:
+            return {"valid": False, "message": "Invalid or inactive relationship code"}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/users/{user_id}/apply-relationship-code")
+async def apply_relationship_code(user_id: str, code_check: RelationshipCodeCheck):
+    """Apply a relationship code to a user and mark them as FREE"""
+    try:
+        # Check if user exists
+        user = await db.users.find_one({"id": user_id})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Validate and check relationship code
+        code = code_check.code.upper().strip()
+        if len(code) != 6 or not code.isalnum() or not code.isupper():
+            return {"success": False, "message": "Invalid code format (must be 6 characters, uppercase letters and numbers)"}
+        
+        rel_code = await db.relationship_codes.find_one({"code": code, "is_active": True})
+        if not rel_code:
+            return {"success": False, "message": "Invalid or inactive relationship code"}
+        
+        # Update user with relationship code and mark as FREE
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {
+                "relationship_code": code,
+                "is_free": True,
+                "code_applied_at": datetime.utcnow()
+            }}
+        )
+        
+        # Increment usage count for the relationship code
+        await db.relationship_codes.update_one(
+            {"code": code},
+            {"$inc": {"usage_count": 1}, "$set": {"last_used": datetime.utcnow()}}
+        )
+        
+        return {"success": True, "message": "Relationship code applied successfully. Account marked as FREE."}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Admin Routes for Relationship Codes
+@app.get("/api/admin/relationship-codes")
+async def get_relationship_codes():
+    """Get all relationship codes (admin only)"""
+    codes = []
+    async for code in db.relationship_codes.find({}):
+        code.pop("_id", None)
+        codes.append(code)
+    return {"codes": codes}
+
+@app.post("/api/admin/relationship-codes")
+async def create_relationship_code(code_data: RelationshipCodeCreate):
+    """Create a new relationship code (admin only)"""
+    try:
+        # Validate code format
+        code = code_data.code.upper().strip()
+        if len(code) != 6 or not code.isalnum() or not code.isupper():
+            raise HTTPException(status_code=400, detail="Invalid code format (must be 6 characters, uppercase letters and numbers)")
+        
+        # Check if code already exists
+        existing = await db.relationship_codes.find_one({"code": code})
+        if existing:
+            raise HTTPException(status_code=400, detail="Relationship code already exists")
+        
+        rel_code_data = {
+            "id": str(uuid.uuid4()),
+            "code": code,
+            "description": code_data.description,
+            "is_active": code_data.is_active,
+            "usage_count": 0,
+            "created_at": datetime.utcnow(),
+            "last_used": None
+        }
+        
+        await db.relationship_codes.insert_one(rel_code_data)
+        return {"message": "Relationship code created successfully", "code_id": rel_code_data["id"]}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/admin/relationship-codes/{code_id}")
+async def update_relationship_code(code_id: str, update_data: dict):
+    """Update a relationship code (admin only)"""
+    try:
+        await db.relationship_codes.update_one(
+            {"id": code_id},
+            {"$set": update_data}
+        )
+        return {"message": "Relationship code updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 @app.get("/api/admin/users")
 async def get_all_users():
     """Get all users (admin only)"""
