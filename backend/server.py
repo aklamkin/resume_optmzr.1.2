@@ -189,7 +189,9 @@ Format the response as JSON with this structure:
             CANDIDATE'S RESUME:
             {request.resume_text}
             
-            Please generate a professional cover letter that specifically addresses the requirements in the job description and highlights the most relevant qualifications from the resume. Make it compelling, specific, and professional.
+            Please generate TWO professional cover letters (short and long versions) that specifically address the requirements in the job description and highlight the most relevant qualifications from the resume. Make them compelling, specific, and professional.
+            
+            Return the response in JSON format with both versions.
             """
         )
 
