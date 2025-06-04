@@ -346,9 +346,9 @@ function App() {
         ) : (
           /* Results View */
           <div className="flex-1 flex flex-col p-6 overflow-hidden">
-            {/* Header with actions */}
+            {/* Header with actions and ratings */}
             <div className="bg-white rounded-lg shadow-lg p-4 mb-4 flex-shrink-0">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Analysis Results</h2>
                 <div className="space-x-3">
                   <button
@@ -370,6 +370,63 @@ function App() {
                   >
                     Start Over
                   </button>
+                </div>
+              </div>
+
+              {/* Rating Cards */}
+              <div className="grid grid-cols-3 gap-4">
+                {/* Skills Gap */}
+                <div 
+                  onClick={() => showRatingDetails('skills')}
+                  className="bg-blue-50 border border-blue-200 rounded-lg p-4 cursor-pointer hover:bg-blue-100 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-blue-900">Skills Gap</h3>
+                    <span className="text-xs text-blue-600">Click for details</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-700 mt-1">
+                    {getAnalysisData()?.skillsGap?.length || 0}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {getAnalysisData()?.skillsGap?.length === 0 ? 'No gaps found' : 'Missing skills'}
+                  </p>
+                </div>
+
+                {/* ATS Keywords */}
+                <div 
+                  onClick={() => showRatingDetails('ats')}
+                  className="bg-green-50 border border-green-200 rounded-lg p-4 cursor-pointer hover:bg-green-100 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-green-900">ATS Keywords</h3>
+                    <span className="text-xs text-green-600">Click for details</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-700 mt-1">
+                    {getAnalysisData()?.atsKeywords?.length || 0}
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    Important keywords
+                  </p>
+                </div>
+
+                {/* Overall Score */}
+                <div 
+                  onClick={() => showRatingDetails('score')}
+                  className="bg-purple-50 border border-purple-200 rounded-lg p-4 cursor-pointer hover:bg-purple-100 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-purple-900">Overall Score</h3>
+                    <span className="text-xs text-purple-600">Click for details</span>
+                  </div>
+                  <p className="text-2xl font-bold text-purple-700 mt-1">
+                    {getAnalysisData()?.overallScore?.match(/\d+/) ? 
+                      getAnalysisData().overallScore.match(/\d+/)[0] + '/100' : 
+                      'N/A'
+                    }
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">
+                    Resume match
+                  </p>
                 </div>
               </div>
             </div>
