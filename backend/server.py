@@ -128,6 +128,88 @@ async def analyze_resume(request: ResumeAnalysisRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-if __name__ == "__main__":
+@app.post("/api/generate-cover-letter")
+async def generate_cover_letter(request: ResumeAnalysisRequest):
+    """Generate a cover letter based on resume and job description"""
+    try:
+        # Import the emergentintegrations library
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        system_prompt = """You are an expert career consultant and professional cover letter writer. Your task is to create a compelling, personalized cover letter that demonstrates the candidate's fit for the specific role.
+
+COVER LETTER BEST PRACTICES:
+1. **Professional Structure**: Opening paragraph, 2-3 body paragraphs, closing paragraph
+2. **Personalization**: Address specific company and role requirements
+3. **Value Proposition**: Clearly articulate what the candidate brings to the role
+4. **Evidence-Based**: Use specific examples and quantifiable achievements from the resume
+5. **Cultural Fit**: Show understanding of company values and culture when possible
+6. **Professional Tone**: Confident but not arrogant, enthusiastic but professional
+7. **Call to Action**: End with a clear next step request
+
+STRUCTURE TO FOLLOW:
+
+**Opening Paragraph:**
+- Mention the specific position and how you learned about it
+- Brief statement of interest and top qualification
+- Hook that makes them want to read more
+
+**Body Paragraph 1:**
+- Address the most critical job requirement
+- Provide specific example from resume that demonstrates this skill/experience
+- Quantify impact when possible
+
+**Body Paragraph 2:**
+- Address 1-2 additional key requirements
+- Show cultural fit and understanding of the company/role
+- Demonstrate enthusiasm and knowledge about the position
+
+**Closing Paragraph:**
+- Reiterate interest and value proposition
+- Professional call to action (interview request)
+- Thank them for their consideration
+
+Generate a complete, professional cover letter that follows this structure. Make it:
+- Specific to the job requirements
+- Professional yet personable
+- 300-400 words in length
+- Focused on value and fit
+- Ready to use with minimal editing
+
+Format the response as a complete cover letter with proper spacing and paragraphs."""
+
+        # Create AI chat instance
+        chat = LlmChat(
+            api_key="AIzaSyAjCoNRO-JjV3BogCG-Z7mJipzbd7puXrw",
+            session_id=f"cover_letter_{uuid.uuid4()}",
+            system_message=system_prompt
+        ).with_model("gemini", "gemini-2.0-flash")
+
+        # Create user message
+        user_message = UserMessage(
+            text=f"""
+            JOB DESCRIPTION:
+            {request.job_description}
+            
+            CANDIDATE'S RESUME:
+            {request.resume_text}
+            
+            Please generate a professional cover letter that specifically addresses the requirements in the job description and highlights the most relevant qualifications from the resume. Make it compelling, specific, and professional.
+            """
+        )
+
+        # Get AI response
+        response = await chat.send_message(user_message)
+        
+        # Clean up the response
+        cleaned_response = str(response).strip()
+        
+        return {
+            "cover_letter_id": str(uuid.uuid4()),
+            "cover_letter": cleaned_response,
+            "created_at": datetime.utcnow()
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Cover letter generation failed: {str(e)}")
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
