@@ -458,7 +458,7 @@ function App() {
             <div className="flex-1 p-6 overflow-auto">
               <div className="bg-gray-50 p-6 rounded-lg border">
                 <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
-                  {coverLetter}
+                  {selectedVersion === 'short' ? coverLetterShort : coverLetterLong}
                 </pre>
               </div>
             </div>
