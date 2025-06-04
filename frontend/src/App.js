@@ -489,6 +489,15 @@ function App() {
                   </div>
                 )}
               </div>
+              {/* Debug info for development */}
+              {rawAnalysis && (
+                <div className="mt-4 p-4 bg-gray-100 rounded">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Debug - Raw Analysis:</h4>
+                  <pre className="text-xs text-gray-600 whitespace-pre-wrap overflow-auto max-h-32">
+                    {typeof rawAnalysis === 'string' ? rawAnalysis : JSON.stringify(rawAnalysis, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
           </div>
         </div>
