@@ -41,6 +41,14 @@ class UserUpdate(BaseModel):
     relationship_code: Optional[str] = None
     is_free: Optional[bool] = None
 
+class RelationshipCodeCreate(BaseModel):
+    code: str
+    description: Optional[str] = None
+    is_active: bool = True
+
+class RelationshipCodeCheck(BaseModel):
+    code: str
+
 class ResumeAnalysisRequest(BaseModel):
     job_description: str
     resume_text: str
