@@ -92,6 +92,32 @@ function App() {
       throw error;
     }
   };
+  // Login user
+  const loginUser = async (identifier) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ identifier }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail);
+      }
+      
+      const result = await response.json();
+      setCurrentUser(result.user);
+      setCurrentView('dashboard');
+      return result.user;
+    } catch (error) {
+      console.error('Error logging in:', error);
+      throw error;
+    }
+  };
+
   const createUser = async (username, email) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/users`, {
