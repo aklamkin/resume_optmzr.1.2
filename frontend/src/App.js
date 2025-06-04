@@ -204,7 +204,9 @@ function App() {
     setAppliedSuggestions(new Set());
     setOptimizedResume('');
     setPanelWidths([33.33, 33.33, 33.33]); // Reset panel widths
-    setCoverLetter('');
+    setCoverLetterShort('');
+    setCoverLetterLong('');
+    setSelectedVersion('short');
     setShowCoverLetter(false);
   };
 
