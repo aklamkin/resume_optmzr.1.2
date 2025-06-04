@@ -722,36 +722,6 @@ function App() {
       );
     };
 
-    const applySuggestion = (index) => {
-      const suggestion = suggestions[index];
-      if (!suggestion) return;
-
-      const newApplied = new Set(appliedSuggestions);
-      
-      if (appliedSuggestions.has(index)) {
-        // Unapply suggestion
-        newApplied.delete(index);
-        setAppliedSuggestions(newApplied);
-        
-        // Revert to original text for this suggestion
-        if (suggestion.current_text) {
-          setOptimizedResume(prev => prev.replace(suggestion.suggested_text, suggestion.current_text));
-        }
-      } else {
-        // Apply suggestion
-        newApplied.add(index);
-        setAppliedSuggestions(newApplied);
-        
-        // Apply the suggested text
-        if (suggestion.current_text) {
-          setOptimizedResume(prev => prev.replace(suggestion.current_text, suggestion.suggested_text));
-        } else {
-          // If no current text, append to the resume
-          setOptimizedResume(prev => `${prev}\n\n${suggestion.suggested_text}`);
-        }
-      }
-    };
-
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="bg-white shadow">
