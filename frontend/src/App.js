@@ -212,9 +212,9 @@ function App() {
     setShowCoverLetter(false);
   };
 
-  // Parse suggestions safely
-  const getSuggestions = () => {
-    if (!analysisResult?.analysis) return [];
+  // Parse analysis data safely
+  const getAnalysisData = () => {
+    if (!analysisResult?.analysis) return null;
     
     try {
       let parsed;
@@ -223,11 +223,66 @@ function App() {
       } else {
         parsed = analysisResult.analysis;
       }
-      return parsed.suggestions || [];
+      return {
+        suggestions: parsed.suggestions || [],
+        skillsGap: parsed.skills_gap || [],
+        atsKeywords: parsed.ats_keywords || [],
+        overallScore: parsed.overall_score || "Not available"
+      };
     } catch (error) {
-      console.error('Error parsing suggestions:', error);
-      return [];
+      console.error('Error parsing analysis data:', error);
+      return {
+        suggestions: [],
+        skillsGap: [],
+        atsKeywords: [],
+        overallScore: "Analysis data unavailable"
+      };
     }
+  };
+
+  // Show rating popup
+  const showRatingDetails = (ratingType) => {
+    const analysisData = getAnalysisData();
+    if (!analysisData) return;
+
+    let popupData = {};
+    
+    if (ratingType === 'skills') {
+      popupData = {
+        title: 'Skills Gap Analysis',
+        description: 'Skills mentioned in the job description that are missing or underrepresented in your resume.',
+        items: analysisData.skillsGap,
+        recommendation: analysisData.skillsGap.length > 0 
+          ? 'Add these skills to your resume if you have experience with them, or consider gaining experience in these areas.'
+          : 'Great! Your resume covers the key skills mentioned in the job description.',
+        type: 'skills'
+      };
+    } else if (ratingType === 'ats') {
+      popupData = {
+        title: 'ATS Keywords Optimization',
+        description: 'Important keywords from the job description that help your resume pass Applicant Tracking Systems (ATS).',
+        items: analysisData.atsKeywords,
+        recommendation: 'Incorporate these keywords naturally throughout your resume, especially in the skills and experience sections.',
+        type: 'keywords'
+      };
+    } else if (ratingType === 'score') {
+      popupData = {
+        title: 'Overall Resume Score',
+        description: analysisData.overallScore,
+        items: [],
+        recommendation: 'Review the AI suggestions and apply relevant changes to improve your score.',
+        type: 'score'
+      };
+    }
+    
+    setSelectedRating(popupData);
+    setShowRatingPopup(true);
+  };
+
+  // Parse suggestions safely (keep existing function but use new parsing)
+  const getSuggestions = () => {
+    const analysisData = getAnalysisData();
+    return analysisData ? analysisData.suggestions : [];
   };
 
   return (
