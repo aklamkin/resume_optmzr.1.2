@@ -421,6 +421,48 @@ function App() {
           <p>Free AI-powered resume optimization tool • Drag the dividers to resize panels</p>
         </div>
       </div>
+
+      {/* Cover Letter Modal */}
+      {showCoverLetter && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">Generated Cover Letter</h2>
+              <div className="flex space-x-3">
+                <button
+                  onClick={downloadCoverLetter}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 text-sm"
+                >
+                  Download
+                </button>
+                <button
+                  onClick={() => setShowCoverLetter(false)}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-700 text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="flex-1 p-6 overflow-auto">
+              <div className="bg-gray-50 p-6 rounded-lg border">
+                <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
+                  {coverLetter}
+                </pre>
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-gray-200 bg-gray-50 text-center">
+              <p className="text-sm text-gray-600">
+                Review and customize this cover letter as needed before sending
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
