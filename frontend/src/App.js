@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import './App.css';
 
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
@@ -10,6 +10,69 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [appliedSuggestions, setAppliedSuggestions] = useState(new Set());
   const [optimizedResume, setOptimizedResume] = useState('');
+  
+  // Resizable panels state
+  const [panelWidths, setPanelWidths] = useState([33.33, 33.33, 33.33]); // percentages
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeIndex, setResizeIndex] = useState(null);
+  const containerRef = useRef(null);
+
+  // Handle panel resizing
+  const handleMouseDown = useCallback((index) => (e) => {
+    e.preventDefault();
+    setIsResizing(true);
+    setResizeIndex(index);
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isResizing || resizeIndex === null || !containerRef.current) return;
+
+    const container = containerRef.current;
+    const containerRect = container.getBoundingClientRect();
+    const mouseX = e.clientX - containerRect.left;
+    const containerWidth = containerRect.width;
+    const mousePercent = (mouseX / containerWidth) * 100;
+
+    const newWidths = [...panelWidths];
+    const totalOtherPanels = 100 - mousePercent;
+    
+    if (resizeIndex === 0) {
+      // Resizing between first and second panel
+      const remainingWidth = 100 - mousePercent;
+      const ratio = newWidths[2] / (newWidths[1] + newWidths[2]);
+      
+      newWidths[0] = Math.max(15, Math.min(70, mousePercent));
+      newWidths[1] = remainingWidth * (1 - ratio);
+      newWidths[2] = remainingWidth * ratio;
+    } else if (resizeIndex === 1) {
+      // Resizing between second and third panel
+      const firstPanelWidth = newWidths[0];
+      const availableWidth = 100 - firstPanelWidth;
+      const secondPanelPercent = ((mouseX / containerWidth) * 100) - firstPanelWidth;
+      
+      newWidths[1] = Math.max(15, Math.min(availableWidth - 15, secondPanelPercent));
+      newWidths[2] = availableWidth - newWidths[1];
+    }
+
+    setPanelWidths(newWidths);
+  }, [isResizing, resizeIndex, panelWidths]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+    setResizeIndex(null);
+  }, []);
+
+  // Add event listeners
+  React.useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isResizing, handleMouseMove, handleMouseUp]);
 
   // Analyze resume
   const analyzeResume = async () => {
@@ -86,6 +149,7 @@ function App() {
     setAnalysisResult(null);
     setAppliedSuggestions(new Set());
     setOptimizedResume('');
+    setPanelWidths([33.33, 33.33, 33.33]); // Reset panel widths
   };
 
   // Parse suggestions safely
@@ -107,78 +171,80 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white shadow-sm border-b flex-shrink-0">
         <div className="container mx-auto px-6 py-4">
           <h1 className="text-3xl font-bold text-gray-900">AI Resume Optimizer</h1>
           <p className="text-gray-600 mt-2">Free tool to optimize your resume for any job description</p>
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-8">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {!analysisResult ? (
           /* Input Form */
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-lg p-8">
-              <h2 className="text-2xl font-bold mb-6 text-gray-900">Optimize Your Resume</h2>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Job Description *
-                  </label>
-                  <textarea
-                    value={jobDescription}
-                    onChange={(e) => setJobDescription(e.target.value)}
-                    placeholder="Paste the job description here..."
-                    className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                    required
-                  />
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="w-full max-w-6xl">
+              <div className="bg-white rounded-lg shadow-lg p-8">
+                <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center">Optimize Your Resume</h2>
+                
+                <div className="grid md:grid-cols-2 gap-6 h-96">
+                  <div className="flex flex-col">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Job Description *
+                    </label>
+                    <textarea
+                      value={jobDescription}
+                      onChange={(e) => setJobDescription(e.target.value)}
+                      placeholder="Paste the job description here..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex flex-col">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Your Resume *
+                    </label>
+                    <textarea
+                      value={resumeText}
+                      onChange={(e) => setResumeText(e.target.value)}
+                      placeholder="Paste your current resume text here..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      required
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Resume *
-                  </label>
-                  <textarea
-                    value={resumeText}
-                    onChange={(e) => setResumeText(e.target.value)}
-                    placeholder="Paste your current resume text here..."
-                    className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                    required
-                  />
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={analyzeResume}
+                    disabled={isLoading || !jobDescription.trim() || !resumeText.trim()}
+                    className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? 'Analyzing...' : 'Analyze Resume'}
+                  </button>
                 </div>
-              </div>
-
-              <div className="mt-6 text-center">
-                <button
-                  onClick={analyzeResume}
-                  disabled={isLoading || !jobDescription.trim() || !resumeText.trim()}
-                  className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? 'Analyzing...' : 'Analyze Resume'}
-                </button>
               </div>
             </div>
           </div>
         ) : (
           /* Results View */
-          <div className="max-w-7xl mx-auto">
+          <div className="flex-1 flex flex-col p-6 overflow-hidden">
             {/* Header with actions */}
-            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div className="bg-white rounded-lg shadow-lg p-4 mb-4 flex-shrink-0">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Analysis Results</h2>
-                <div className="space-x-4">
+                <h2 className="text-xl font-bold text-gray-900">Analysis Results</h2>
+                <div className="space-x-3">
                   <button
                     onClick={downloadResume}
-                    className="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700"
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 text-sm"
                   >
                     Download Resume
                   </button>
                   <button
                     onClick={resetForm}
-                    className="bg-gray-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-700"
+                    className="bg-gray-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-700 text-sm"
                   >
                     Start Over
                   </button>
@@ -186,69 +252,103 @@ function App() {
               </div>
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Original Resume */}
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900">Original Resume</h3>
-                <div className="bg-gray-50 p-4 rounded border h-96 overflow-y-auto">
+            {/* Resizable Panels */}
+            <div 
+              ref={containerRef}
+              className="flex-1 flex bg-white rounded-lg shadow-lg overflow-hidden"
+              style={{ minHeight: '500px' }}
+            >
+              {/* Original Resume Panel */}
+              <div 
+                className="flex flex-col border-r border-gray-200"
+                style={{ width: `${panelWidths[0]}%` }}
+              >
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex-shrink-0">
+                  <h3 className="font-semibold text-gray-900">Original Resume</h3>
+                </div>
+                <div className="flex-1 p-4 overflow-auto">
                   <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
                     {resumeText}
                   </pre>
                 </div>
               </div>
 
-              {/* AI Suggestions */}
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900">
-                  AI Suggestions ({getSuggestions().length})
-                </h3>
-                <div className="space-y-3 h-96 overflow-y-auto">
-                  {getSuggestions().map((suggestion, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-blue-600 uppercase bg-blue-50 px-2 py-1 rounded">
-                          {suggestion.section || 'general'}
-                        </span>
-                        <button
-                          onClick={() => toggleSuggestion(index, suggestion)}
-                          className={`text-xs px-3 py-1 rounded font-medium ${
-                            appliedSuggestions.has(index)
-                              ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                          }`}
-                        >
-                          {appliedSuggestions.has(index) ? 'Applied ✓' : 'Apply'}
-                        </button>
-                      </div>
-                      
-                      {suggestion.current_text && (
+              {/* Resize Handle 1 */}
+              <div
+                className="w-1 bg-gray-300 cursor-col-resize hover:bg-gray-400 transition-colors flex-shrink-0"
+                onMouseDown={handleMouseDown(0)}
+              />
+
+              {/* AI Suggestions Panel */}
+              <div 
+                className="flex flex-col border-r border-gray-200"
+                style={{ width: `${panelWidths[1]}%` }}
+              >
+                <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex-shrink-0">
+                  <h3 className="font-semibold text-gray-900">
+                    AI Suggestions ({getSuggestions().length})
+                  </h3>
+                </div>
+                <div className="flex-1 p-4 overflow-auto">
+                  <div className="space-y-3">
+                    {getSuggestions().map((suggestion, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-3 bg-white">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-blue-600 uppercase bg-blue-100 px-2 py-1 rounded">
+                            {suggestion.section || 'general'}
+                          </span>
+                          <button
+                            onClick={() => toggleSuggestion(index, suggestion)}
+                            className={`text-xs px-3 py-1 rounded font-medium transition-colors ${
+                              appliedSuggestions.has(index)
+                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                            }`}
+                          >
+                            {appliedSuggestions.has(index) ? 'Applied ✓' : 'Apply'}
+                          </button>
+                        </div>
+                        
+                        {suggestion.current_text && (
+                          <div className="mb-2">
+                            <p className="text-xs text-gray-500 mb-1">Current:</p>
+                            <p className="text-xs text-gray-700 bg-red-50 p-2 rounded border">
+                              {suggestion.current_text}
+                            </p>
+                          </div>
+                        )}
+                        
                         <div className="mb-2">
-                          <p className="text-xs text-gray-500 mb-1">Current:</p>
-                          <p className="text-xs text-gray-700 bg-red-50 p-2 rounded border">
-                            {suggestion.current_text}
+                          <p className="text-xs text-gray-500 mb-1">Suggested:</p>
+                          <p className="text-xs text-gray-700 bg-green-50 p-2 rounded border">
+                            {suggestion.suggested_text}
                           </p>
                         </div>
-                      )}
-                      
-                      <div className="mb-2">
-                        <p className="text-xs text-gray-500 mb-1">Suggested:</p>
-                        <p className="text-xs text-gray-700 bg-green-50 p-2 rounded border">
-                          {suggestion.suggested_text}
+                        
+                        <p className="text-xs text-gray-600 italic">
+                          {suggestion.reason}
                         </p>
                       </div>
-                      
-                      <p className="text-xs text-gray-600 italic">
-                        {suggestion.reason}
-                      </p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Optimized Resume */}
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900">Optimized Resume</h3>
-                <div className="bg-green-50 p-4 rounded border h-96 overflow-y-auto">
+              {/* Resize Handle 2 */}
+              <div
+                className="w-1 bg-gray-300 cursor-col-resize hover:bg-gray-400 transition-colors flex-shrink-0"
+                onMouseDown={handleMouseDown(1)}
+              />
+
+              {/* Optimized Resume Panel */}
+              <div 
+                className="flex flex-col"
+                style={{ width: `${panelWidths[2]}%` }}
+              >
+                <div className="bg-green-50 px-4 py-3 border-b border-gray-200 flex-shrink-0">
+                  <h3 className="font-semibold text-gray-900">Optimized Resume</h3>
+                </div>
+                <div className="flex-1 p-4 overflow-auto">
                   <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
                     {optimizedResume}
                   </pre>
@@ -260,9 +360,9 @@ function App() {
       </div>
 
       {/* Footer */}
-      <div className="bg-white border-t mt-12">
-        <div className="container mx-auto px-6 py-4 text-center text-gray-600">
-          <p>Free AI-powered resume optimization tool</p>
+      <div className="bg-white border-t flex-shrink-0">
+        <div className="container mx-auto px-6 py-3 text-center text-gray-600 text-sm">
+          <p>Free AI-powered resume optimization tool • Drag the dividers to resize panels</p>
         </div>
       </div>
     </div>
