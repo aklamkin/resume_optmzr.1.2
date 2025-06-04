@@ -377,6 +377,11 @@ function App() {
                     FREE
                   </span>
                 )}
+                {currentUser?.relationship_code && (
+                  <span className="text-xs text-gray-500">
+                    Code: {currentUser.relationship_code}
+                  </span>
+                )}
               </div>
               <button
                 onClick={() => setCurrentView('admin')}
