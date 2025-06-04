@@ -825,19 +825,42 @@ function App() {
             <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
               <div className="text-center">
                 <h3 className="text-lg font-semibold mb-4">Download Optimized Resume</h3>
-                {currentUser?.is_free ? (
-                  <button className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700">
-                    Download Free (DOCX + PDF)
-                  </button>
+                
+                {downloadEligibility?.can_download ? (
+                  <div className="space-y-4">
+                    {downloadEligibility.reason === 'free_user' && (
+                      <p className="text-green-600 font-medium">✨ FREE Account - No Payment Required!</p>
+                    )}
+                    {downloadEligibility.reason === 'payment_completed' && (
+                      <p className="text-green-600 font-medium">✅ Payment Completed - Ready to Download!</p>
+                    )}
+                    <button 
+                      onClick={() => {
+                        // For now, just show success message since we don't have actual file generation
+                        alert('Resume download started! Files would be generated and downloaded in production.');
+                      }}
+                      className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700"
+                    >
+                      Download Resume (DOCX + PDF)
+                    </button>
+                  </div>
+                ) : downloadEligibility === null ? (
+                  <div className="text-gray-500">
+                    <p>Checking download eligibility...</p>
+                  </div>
                 ) : (
                   <div className="space-y-4">
                     <p className="text-gray-600">Download your optimized resume for $1</p>
-                    <button className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700">
+                    <button 
+                      onClick={() => {
+                        alert('Apple Pay integration would be triggered here. For demo, payment is simulated.');
+                      }}
+                      className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700"
+                    >
                       Pay $1 & Download (Apple Pay)
                     </button>
                   </div>
-                )}
-              </div>
+                )}</div>
               {/* Debug info for development */}
               {rawAnalysis && (
                 <div className="mt-4 p-4 bg-gray-100 rounded">
