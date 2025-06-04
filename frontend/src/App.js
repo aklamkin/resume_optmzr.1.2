@@ -164,6 +164,11 @@ function App() {
       const configResponse = await fetch(`${API_BASE_URL}/api/admin/config`);
       const configData = await configResponse.json();
       setAiConfig(configData);
+
+      // Load relationship codes
+      const codesResponse = await fetch(`${API_BASE_URL}/api/admin/relationship-codes`);
+      const codesData = await codesResponse.json();
+      setRelationshipCodes(codesData.codes);
     } catch (error) {
       console.error('Error loading admin data:', error);
     }
