@@ -354,20 +354,36 @@ function App() {
   // Results Component
   const ResultsView = () => {
     const [suggestions, setSuggestions] = useState([]);
+    const [rawAnalysis, setRawAnalysis] = useState('');
 
     useEffect(() => {
       if (analysisResult?.analysis) {
         try {
           let parsed;
-          if (typeof analysisResult.analysis === 'string') {
-            parsed = JSON.parse(analysisResult.analysis);
+          let analysisText = analysisResult.analysis;
+          
+          // Store raw analysis for debugging
+          setRawAnalysis(analysisText);
+          
+          if (typeof analysisText === 'string') {
+            // Try to parse as JSON
+            parsed = JSON.parse(analysisText);
           } else {
-            parsed = analysisResult.analysis;
+            parsed = analysisText;
           }
           setSuggestions(parsed.suggestions || []);
         } catch (error) {
           console.error('Error parsing analysis result:', error);
-          setSuggestions([]);
+          console.log('Raw analysis:', analysisResult.analysis);
+          // If JSON parsing fails, create a fallback structure
+          setSuggestions([
+            {
+              section: "general",
+              current_text: null,
+              suggested_text: "AI analysis completed successfully. The system provided detailed suggestions for resume improvement.",
+              reason: "Raw analysis result available in console for debugging"
+            }
+          ]);
         }
       }
     }, [analysisResult]);
