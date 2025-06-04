@@ -117,7 +117,19 @@ Format your response as JSON with the following structure:
 
         # Get AI response
         response = await chat.send_message(user_message)
-        return response
+        
+        # Clean up the response - remove markdown code blocks if present
+        cleaned_response = str(response)
+        if "```json" in cleaned_response:
+            # Extract JSON from markdown code blocks
+            start_marker = "```json"
+            end_marker = "```"
+            start_index = cleaned_response.find(start_marker) + len(start_marker)
+            end_index = cleaned_response.find(end_marker, start_index)
+            if end_index > start_index:
+                cleaned_response = cleaned_response[start_index:end_index].strip()
+        
+        return cleaned_response
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")
