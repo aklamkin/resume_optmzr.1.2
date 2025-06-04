@@ -246,6 +246,28 @@ class ResumeOptimizerTester:
             print_response=True
         )[0]
         
+    def test_login_with_specific_email(self):
+        """Test login with the specific test@example.com email"""
+        specific_email = "test@example.com"
+        print(f"\n🔍 Testing Login with specific email: {specific_email}...")
+        
+        success, response = self.run_test(
+            "Login with specific email",
+            "POST",
+            "/api/auth/login",
+            200,
+            data={"identifier": specific_email},
+            print_response=True
+        )
+        
+        if success and response.get("success"):
+            print(f"✅ Successfully logged in with email: {specific_email}")
+            self.user_id = response["user"]["id"]
+            return True, response["user"]
+        else:
+            print(f"❌ Failed to log in with email: {specific_email}")
+            return False, None
+            
     # Tests for Apple Pay and download eligibility
     def test_apple_pay_validate_merchant(self):
         """Test Apple Pay merchant validation"""
