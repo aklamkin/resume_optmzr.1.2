@@ -603,12 +603,10 @@ function App() {
     </div>
   );
 
-  // Results Component
+  // Results Component - Simplified and stable version
   const ResultsView = () => {
     const [suggestions, setSuggestions] = useState([]);
     const [rawAnalysis, setRawAnalysis] = useState('');
-    const [appliedSuggestions, setAppliedSuggestions] = useState(new Set());
-    const [optimizedResume, setOptimizedResume] = useState('');
 
     useEffect(() => {
       if (analysisResult?.analysis) {
@@ -620,37 +618,30 @@ function App() {
           setRawAnalysis(analysisText);
           
           if (typeof analysisText === 'string') {
-            // Try to parse as JSON
             parsed = JSON.parse(analysisText);
           } else {
             parsed = analysisText;
           }
           setSuggestions(parsed.suggestions || []);
-          
-          // Initialize optimized resume with original
-          setOptimizedResume(resumeText);
         } catch (error) {
           console.error('Error parsing analysis result:', error);
-          console.log('Raw analysis:', analysisResult.analysis);
-          // If JSON parsing fails, create a fallback structure
           setSuggestions([
             {
               section: "general",
               current_text: null,
               suggested_text: "AI analysis completed successfully. The system provided detailed suggestions for resume improvement.",
-              reason: "Raw analysis result available in console for debugging"
+              reason: "Analysis completed - check console for details"
             }
           ]);
-          setOptimizedResume(resumeText);
         }
       }
 
-      // Check download eligibility when analysis result is available
+      // Check download eligibility
       if (analysisResult?.analysis_id && currentUser?.id) {
         checkDownloadEligibility(currentUser.id, analysisResult.analysis_id)
           .then(setDownloadEligibility);
       }
-    }, [analysisResult, resumeText]);
+    }, [analysisResult]);
 
     // Apple Pay Component
     const ApplePayButton = ({ onSuccess, onError }) => {
