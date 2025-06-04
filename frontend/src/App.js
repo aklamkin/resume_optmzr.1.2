@@ -609,6 +609,8 @@ function App() {
     const [rawAnalysis, setRawAnalysis] = useState('');
     const [appliedSuggestions, setAppliedSuggestions] = useState(new Set());
     const [optimizedResume, setOptimizedResume] = useState('');
+    const [appliedSuggestions, setAppliedSuggestions] = useState(new Set());
+    const [optimizedResume, setOptimizedResume] = useState('');
 
     useEffect(() => {
       if (analysisResult?.analysis) {
