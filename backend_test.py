@@ -11,9 +11,11 @@ class ResumeOptimizerTester:
         self.tests_run = 0
         self.tests_passed = 0
         self.user_id = None
+        self.analysis_id = None
         self.test_username = f"testuser_{uuid.uuid4().hex[:8]}"
         self.test_email = f"test_{uuid.uuid4().hex[:8]}@example.com"
-
+        self.test_relationship_code = None
+        
     def run_test(self, name, method, endpoint, expected_status, data=None, print_response=False):
         """Run a single API test"""
         url = f"{self.base_url}{endpoint}"
@@ -133,14 +135,16 @@ class ResumeOptimizerTester:
             data={
                 "job_description": job_description,
                 "resume_text": resume_text
-            }
+            },
+            print_response=True
         )
         
         if success:
             print("Resume analysis completed successfully")
             # Check if the analysis contains expected fields
-            if "analysis" in response:
-                print("Analysis result received")
+            if "analysis_id" in response:
+                self.analysis_id = response["analysis_id"]
+                print(f"Analysis ID: {self.analysis_id}")
                 return True
         return False
 
@@ -176,6 +180,149 @@ class ResumeOptimizerTester:
             f"/api/admin/users/{self.user_id}/status",
             200,
             data={"is_free": True},
+            print_response=True
+        )[0]
+        
+    # New tests for relationship codes
+    def test_admin_create_relationship_code(self):
+        """Test creating a relationship code"""
+        code = f"TEST{uuid.uuid4().hex[:2].upper()}"
+        success, response = self.run_test(
+            "Admin - Create Relationship Code",
+            "POST",
+            "/api/admin/relationship-codes",
+            200,
+            data={
+                "code": code,
+                "description": "Test relationship code",
+                "is_active": True
+            },
+            print_response=True
+        )
+        
+        if success:
+            self.test_relationship_code = code
+            print(f"Created test relationship code: {code}")
+            return True
+        return False
+        
+    def test_get_relationship_codes(self):
+        """Test getting all relationship codes"""
+        return self.run_test(
+            "Admin - Get Relationship Codes",
+            "GET",
+            "/api/admin/relationship-codes",
+            200,
+            print_response=True
+        )[0]
+        
+    def test_check_relationship_code(self):
+        """Test checking a relationship code"""
+        if not self.test_relationship_code:
+            print("❌ Cannot test relationship code check - no code created")
+            return False
+            
+        return self.run_test(
+            "Check Relationship Code",
+            "POST",
+            "/api/relationship-codes/check",
+            200,
+            data={"code": self.test_relationship_code},
+            print_response=True
+        )[0]
+        
+    def test_apply_relationship_code(self):
+        """Test applying a relationship code to a user"""
+        if not self.user_id or not self.test_relationship_code:
+            print("❌ Cannot test applying relationship code - missing user or code")
+            return False
+            
+        return self.run_test(
+            "Apply Relationship Code",
+            "POST",
+            f"/api/users/{self.user_id}/apply-relationship-code",
+            200,
+            data={"code": self.test_relationship_code},
+            print_response=True
+        )[0]
+        
+    # Tests for Apple Pay and download eligibility
+    def test_apple_pay_validate_merchant(self):
+        """Test Apple Pay merchant validation"""
+        return self.run_test(
+            "Apple Pay - Validate Merchant",
+            "POST",
+            "/api/apple-pay/validate-merchant",
+            200,
+            data={"validationURL": "https://apple-pay-gateway.apple.com/paymentservices/validatemerchant"},
+            print_response=True
+        )[0]
+        
+    def test_apple_pay_process_payment(self):
+        """Test Apple Pay payment processing"""
+        if not self.user_id or not self.analysis_id:
+            print("❌ Cannot test payment processing - missing user or analysis ID")
+            return False
+            
+        return self.run_test(
+            "Apple Pay - Process Payment",
+            "POST",
+            "/api/apple-pay/process-payment",
+            200,
+            data={
+                "payment_token": {
+                    "paymentData": "mock_payment_data",
+                    "paymentMethod": {
+                        "displayName": "Visa 1234",
+                        "network": "Visa",
+                        "type": "credit"
+                    },
+                    "transactionIdentifier": "mock_transaction_id"
+                },
+                "amount": 1.00,
+                "currency": "USD",
+                "user_id": self.user_id,
+                "analysis_id": self.analysis_id
+            },
+            print_response=True
+        )[0]
+        
+    def test_check_download_eligibility(self):
+        """Test checking download eligibility"""
+        if not self.user_id or not self.analysis_id:
+            print("❌ Cannot test download eligibility - missing user or analysis ID")
+            return False
+            
+        return self.run_test(
+            "Check Download Eligibility",
+            "GET",
+            f"/api/users/{self.user_id}/can-download/{self.analysis_id}",
+            200,
+            print_response=True
+        )[0]
+        
+    def test_existing_relationship_code(self):
+        """Test using the existing TEST01 relationship code"""
+        if not self.user_id:
+            print("❌ Cannot test existing relationship code - no user created")
+            return False
+            
+        return self.run_test(
+            "Apply Existing Relationship Code (TEST01)",
+            "POST",
+            f"/api/users/{self.user_id}/apply-relationship-code",
+            200,
+            data={"code": "TEST01"},
+            print_response=True
+        )[0]
+        
+    def test_existing_free_user(self):
+        """Test the existing free user with TEST01 code"""
+        return self.run_test(
+            "Get Existing Free User",
+            "GET",
+            "/api/users/34848618-b48a-420e-be1e-5cb95ae70bf5",
+            200,
             print_response=True
         )[0]
 
