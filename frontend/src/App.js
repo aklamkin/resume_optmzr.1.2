@@ -545,6 +545,66 @@ function App() {
         </div>
       </div>
 
+      {/* Rating Details Modal */}
+      {showRatingPopup && selectedRating && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">{selectedRating.title}</h2>
+              <button
+                onClick={() => setShowRatingPopup(false)}
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-700 text-sm"
+              >
+                Close
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="flex-1 p-6 overflow-auto">
+              <p className="text-gray-700 mb-4">{selectedRating.description}</p>
+              
+              {selectedRating.type === 'skills' && selectedRating.items.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Missing Skills:</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedRating.items.map((skill, index) => (
+                      <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <span className="text-red-800 font-medium">{skill}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {selectedRating.type === 'keywords' && selectedRating.items.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Important ATS Keywords:</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedRating.items.map((keyword, index) => (
+                      <span key={index} className="bg-green-50 border border-green-200 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                        {keyword}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {selectedRating.type === 'skills' && selectedRating.items.length === 0 && (
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-800 font-medium">✓ Excellent! Your resume covers all the key skills mentioned in the job description.</p>
+                </div>
+              )}
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">Recommendation:</h3>
+                <p className="text-blue-800">{selectedRating.recommendation}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Cover Letter Modal */}
       {showCoverLetter && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
