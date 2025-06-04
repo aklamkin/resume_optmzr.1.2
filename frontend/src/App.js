@@ -309,8 +309,27 @@ function App() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isLoginMode, setIsLoginMode] = useState(false);
+    const [identifier, setIdentifier] = useState('');
 
-    const handleSubmit = async (e) => {
+    const handleLogin = async (e) => {
+      e.preventDefault();
+      if (!identifier.trim()) {
+        alert('Please enter your email or username');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        await loginUser(identifier);
+      } catch (error) {
+        alert(`Login failed: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handleSignup = async (e) => {
       e.preventDefault();
       if (!username.trim() || !email.trim()) {
         alert('Please fill in all fields');
@@ -332,62 +351,112 @@ function App() {
         <div className="max-w-md w-full space-y-8">
           <div>
             <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Create your account
+              {isLoginMode ? 'Welcome back!' : 'Create your account'}
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
-              Start optimizing your resume today
+              {isLoginMode ? 'Log in to access your resume analyses' : 'Start optimizing your resume today'}
             </p>
           </div>
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-4">
+
+          {isLoginMode ? (
+            <form className="mt-8 space-y-6" onSubmit={handleLogin}>
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                  Username
+                <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
+                  Email or Username
                 </label>
                 <input
-                  id="username"
+                  id="identifier"
                   type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Enter your email or username"
                   required
                 />
               </div>
+
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  required
-                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                >
+                  {loading ? 'Logging in...' : 'Log In'}
+                </button>
               </div>
-            </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-              >
-                {loading ? 'Creating Account...' : 'Create Account'}
-              </button>
-            </div>
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsLoginMode(false)}
+                  className="text-indigo-600 hover:text-indigo-500 text-sm"
+                >
+                  Don't have an account? Sign up
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form className="mt-8 space-y-6" onSubmit={handleSignup}>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                    Username
+                  </label>
+                  <input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    required
+                  />
+                </div>
+              </div>
 
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setCurrentView('landing')}
-                className="text-indigo-600 hover:text-indigo-500 text-sm"
-              >
-                Back to Home
-              </button>
-            </div>
-          </form>
+              <div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                >
+                  {loading ? 'Creating Account...' : 'Create Account'}
+                </button>
+              </div>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsLoginMode(true)}
+                  className="text-indigo-600 hover:text-indigo-500 text-sm"
+                >
+                  Already have an account? Log in
+                </button>
+              </div>
+            </form>
+          )}
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setCurrentView('landing')}
+              className="text-indigo-600 hover:text-indigo-500 text-sm"
+            >
+              Back to Home
+            </button>
+          </div>
         </div>
       </div>
     );
