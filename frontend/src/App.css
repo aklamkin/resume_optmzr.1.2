@@ -1,38 +1,222 @@
+@tailwind base;  
+@tailwind components;
+@tailwind utilities;
+
 .App {
-    text-align: center;
+  text-align: left;
 }
 
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Custom scrollbar styles */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
 }
 
-.App-link {
-    color: #61dafb;
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+/* Professional gradient backgrounds */
+.bg-gradient-to-br {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%);
+}
+
+/* Custom button hover effects */
+.btn-primary {
+  @apply bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-lg transition-all duration-200 ease-in-out transform hover:scale-105;
+}
+
+.btn-secondary {
+  @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-all duration-200 ease-in-out;
+}
+
+/* Card styles */
+.card {
+  @apply bg-white rounded-xl shadow-lg p-6 border border-gray-100;
+}
+
+.card-admin {
+  @apply bg-white rounded-lg shadow-md p-6 border border-gray-200;
+  background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+/* Status badges */
+.badge-free {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200;
+}
+
+.badge-paid {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200;
+}
+
+/* Professional form styling */
+.form-input {
+  @apply block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200;
+}
+
+.form-textarea {
+  @apply block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 resize-none;
+}
+
+.form-label {
+  @apply block text-sm font-semibold text-gray-700 mb-2;
+}
+
+/* Diff editor styling */
+.diff-container {
+  @apply border border-gray-200 rounded-lg overflow-hidden;
+}
+
+.diff-original {
+  @apply bg-red-50 border-r border-gray-200;
+}
+
+.diff-suggested {
+  @apply bg-green-50;
+}
+
+.diff-text {
+  @apply p-4 text-sm font-mono whitespace-pre-wrap;
+}
+
+/* Analysis suggestion cards */
+.suggestion-card {
+  @apply border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200;
+}
+
+.suggestion-header {
+  @apply flex items-center justify-between mb-3;
+}
+
+.suggestion-section-badge {
+  @apply text-xs font-medium text-indigo-600 uppercase tracking-wide bg-indigo-50 px-2 py-1 rounded;
+}
+
+.suggestion-apply-btn {
+  @apply text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full hover:bg-green-200 transition-colors duration-200 font-medium;
+}
+
+.suggestion-current {
+  @apply text-sm text-gray-700 bg-red-50 p-3 rounded border-l-4 border-red-200 mb-2;
+}
+
+.suggestion-improved {
+  @apply text-sm text-gray-700 bg-green-50 p-3 rounded border-l-4 border-green-200 mb-2;
+}
+
+.suggestion-reason {
+  @apply text-xs text-gray-600 italic bg-gray-50 p-2 rounded;
+}
+
+/* Admin panel specific styling */
+.admin-header {
+  @apply bg-gradient-to-r from-gray-800 to-gray-900 shadow-lg;
+}
+
+.admin-nav {
+  @apply text-gray-300 hover:text-white transition-colors duration-200;
+}
+
+.admin-table {
+  @apply min-w-full divide-y divide-gray-200 shadow-sm;
+}
+
+.admin-table th {
+  @apply px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50;
+}
+
+.admin-table td {
+  @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
+}
+
+.admin-action-btn {
+  @apply text-sm font-medium hover:underline transition-colors duration-200;
+}
+
+/* Loading states */
+.loading-spinner {
+  @apply inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-current;
+}
+
+/* Professional shadows and borders */
+.shadow-professional {
+  box-shadow: 0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 20px -6px rgba(0, 0, 0, 0.04);
+}
+
+.border-professional {
+  @apply border border-gray-200;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Responsive design helpers */
+@media (max-width: 768px) {
+  .container {
+    @apply px-4;
+  }
+  
+  .card {
+    @apply p-4;
+  }
+  
+  .admin-table {
+    @apply text-xs;
+  }
+  
+  .admin-table th,
+  .admin-table td {
+    @apply px-3 py-2;
+  }
+}
+
+/* Animation classes */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Success and error states */
+.alert-success {
+  @apply bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg;
+}
+
+.alert-error {
+  @apply bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg;
+}
+
+.alert-info {
+  @apply bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg;
 }
