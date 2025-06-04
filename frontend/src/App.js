@@ -176,9 +176,10 @@ function App() {
   const downloadCoverLetter = () => {
     const element = document.createElement('a');
     const coverLetterText = selectedVersion === 'short' ? coverLetterShort : coverLetterLong;
+    const fileName = selectedVersion === 'short' ? 'cover_letter_short.txt' : 'cover_letter_long.txt';
     const file = new Blob([coverLetterText], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
-    element.download = 'cover_letter.txt';
+    element.download = fileName;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
