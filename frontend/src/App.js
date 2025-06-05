@@ -1099,12 +1099,44 @@ function App() {
               {selectedRating.type === 'skills' && selectedRating.items.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Missing Skills:</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedRating.items.map((skill, index) => (
-                      <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-3">
-                        <span className="text-red-800 font-medium">{skill}</span>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-1 gap-3">
+                    {selectedRating.items.map((skill, index) => {
+                      const exists = isKeywordInResume(skill);
+                      return (
+                        <div key={index} className={`flex items-center justify-between p-3 rounded-lg border-2 ${
+                          exists 
+                            ? 'bg-green-50 border-green-200' 
+                            : 'bg-red-50 border-red-200'
+                        }`}>
+                          <span className={`font-medium ${
+                            exists ? 'text-green-800' : 'text-red-800'
+                          }`}>
+                            {exists ? '✓' : '•'} {skill}
+                          </span>
+                          {!exists ? (
+                            <button
+                              onClick={() => addSkillToResume(skill)}
+                              className="bg-green-600 text-white px-3 py-1 rounded-lg text-sm font-medium hover:bg-green-700 transition-all duration-200 flex items-center space-x-1"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                              </svg>
+                              <span>Add</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => removeFromResume(skill)}
+                              className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium hover:bg-red-700 transition-all duration-200 flex items-center space-x-1"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                              </svg>
+                              <span>Remove</span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
