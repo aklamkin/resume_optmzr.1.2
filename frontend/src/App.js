@@ -389,8 +389,12 @@ function App() {
                         required
                       />
                       {isLikelyURL(jobDescription) && (
-                        <div className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                          🌐 URL detected
+                        <div className={`absolute top-2 right-2 text-xs px-2 py-1 rounded ${
+                          isProblematicURL(jobDescription) 
+                            ? 'bg-orange-100 text-orange-800' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {isProblematicURL(jobDescription) ? '⚠️ May be blocked' : '🌐 URL detected'}
                         </div>
                       )}
                     </div>
