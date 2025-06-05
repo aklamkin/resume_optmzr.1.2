@@ -50,6 +50,14 @@ function App() {
   const [showRatingPopup, setShowRatingPopup] = useState(false);
   const [selectedRating, setSelectedRating] = useState(null);
 
+  // Retry dialog state
+  const [showRetryDialog, setShowRetryDialog] = useState(false);
+  const [retryError, setRetryError] = useState(null);
+  const [retryOperation, setRetryOperation] = useState(null); // 'analyze' or 'coverLetter'
+  const [customRetrySeconds, setCustomRetrySeconds] = useState(30);
+  const [customRetryCount, setCustomRetryCount] = useState(3);
+  const [retryMode, setRetryMode] = useState('time'); // 'time' or 'count'
+
   // Handle panel resizing
   const handleMouseDown = useCallback((index) => (e) => {
     e.preventDefault();
