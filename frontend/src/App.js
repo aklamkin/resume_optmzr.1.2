@@ -242,42 +242,7 @@ function App() {
     }
   };
 
-  // Enhanced error handling for API calls
-  const handleApiError = async (error, operation) => {
-    console.log('🚨 API Error occurred:', error);
-    
-    try {
-      let errorDetail = null;
-      
-      // Try to parse error detail from response
-      if (error.response) {
-        errorDetail = await error.response.json();
-      } else if (error.message) {
-        // Check if message contains JSON error info
-        try {
-          errorDetail = JSON.parse(error.message);
-        } catch {
-          errorDetail = { message: error.message, retryable: true };
-        }
-      }
-      
-      // Check if it's a retryable error
-      if (errorDetail && errorDetail.retryable !== false) {
-        setRetryError(errorDetail);
-        setRetryOperation(operation);
-        setShowRetryDialog(true);
-        return true; // Handled as retryable
-      } else {
-        // Non-retryable error, show regular alert
-        alert(errorDetail?.message || error.message || 'An unexpected error occurred');
-        return false;
-      }
-    } catch (parseError) {
-      // If we can't parse the error, treat as non-retryable
-      alert(error.message || 'An unexpected error occurred');
-      return false;
-    }
-  };
+
 
   // Retry operation with custom parameters
   const handleRetryOperation = async () => {
