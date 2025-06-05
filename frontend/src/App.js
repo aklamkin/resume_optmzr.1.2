@@ -267,27 +267,151 @@ function App() {
     }
   };
 
-  // Download cover letter
-  const downloadCoverLetter = () => {
-    const element = document.createElement('a');
-    const coverLetterText = selectedVersion === 'short' ? coverLetterShort : coverLetterLong;
-    const fileName = selectedVersion === 'short' ? 'cover_letter_short.txt' : 'cover_letter_long.txt';
-    const file = new Blob([coverLetterText], { type: 'text/plain' });
-    element.href = URL.createObjectURL(file);
-    element.download = fileName;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  };
-  const downloadResume = () => {
-    const element = document.createElement('a');
+  // Download resume with format options
+  const downloadResume = async (format = 'txt') => {
     const resumeContent = optimizedResume || analysisResult?.original_resume || resumeText;
-    const file = new Blob([resumeContent], { type: 'text/plain' });
-    element.href = URL.createObjectURL(file);
-    element.download = 'optimized_resume.txt';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    
+    if (format === 'txt') {
+      const element = document.createElement('a');
+      const file = new Blob([resumeContent], { type: 'text/plain' });
+      element.href = URL.createObjectURL(file);
+      element.download = 'optimized_resume.txt';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    } else if (format === 'docx') {
+      try {
+        // Split resume content into paragraphs
+        const paragraphs = resumeContent.split('\n').map(line => {
+          return new Paragraph({
+            children: [new TextRun(line || ' ')], // Handle empty lines
+          });
+        });
+
+        // Create document
+        const doc = new Document({
+          sections: [{
+            properties: {},
+            children: paragraphs,
+          }],
+        });
+
+        // Generate and download
+        const buffer = await Packer.toBlob(doc);
+        const element = document.createElement('a');
+        element.href = URL.createObjectURL(buffer);
+        element.download = 'optimized_resume.docx';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      } catch (error) {
+        console.error('Error creating DOCX:', error);
+        alert('Error creating DOCX file. Please try TXT format.');
+      }
+    } else if (format === 'pdf') {
+      try {
+        const pdf = new jsPDF();
+        
+        // Set font
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(11);
+        
+        // Split content into lines that fit on page
+        const lines = pdf.splitTextToSize(resumeContent, 180); // 180mm width
+        
+        let y = 20; // Starting Y position
+        const lineHeight = 6;
+        const maxY = 280; // Max Y before new page
+        
+        lines.forEach((line) => {
+          if (y > maxY) {
+            pdf.addPage();
+            y = 20;
+          }
+          pdf.text(line, 15, y); // 15mm left margin
+          y += lineHeight;
+        });
+        
+        pdf.save('optimized_resume.pdf');
+      } catch (error) {
+        console.error('Error creating PDF:', error);
+        alert('Error creating PDF file. Please try TXT format.');
+      }
+    }
+  };
+
+  // Download cover letter with format options
+  const downloadCoverLetter = async (format = 'txt') => {
+    const coverLetterText = selectedVersion === 'short' ? coverLetterShort : coverLetterLong;
+    const fileName = selectedVersion === 'short' ? 'cover_letter_short' : 'cover_letter_long';
+    
+    if (format === 'txt') {
+      const element = document.createElement('a');
+      const file = new Blob([coverLetterText], { type: 'text/plain' });
+      element.href = URL.createObjectURL(file);
+      element.download = `${fileName}.txt`;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    } else if (format === 'docx') {
+      try {
+        // Split cover letter content into paragraphs
+        const paragraphs = coverLetterText.split('\n').map(line => {
+          return new Paragraph({
+            children: [new TextRun(line || ' ')], // Handle empty lines
+          });
+        });
+
+        // Create document
+        const doc = new Document({
+          sections: [{
+            properties: {},
+            children: paragraphs,
+          }],
+        });
+
+        // Generate and download
+        const buffer = await Packer.toBlob(doc);
+        const element = document.createElement('a');
+        element.href = URL.createObjectURL(buffer);
+        element.download = `${fileName}.docx`;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      } catch (error) {
+        console.error('Error creating DOCX:', error);
+        alert('Error creating DOCX file. Please try TXT format.');
+      }
+    } else if (format === 'pdf') {
+      try {
+        const pdf = new jsPDF();
+        
+        // Set font
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(11);
+        
+        // Split content into lines that fit on page
+        const lines = pdf.splitTextToSize(coverLetterText, 180); // 180mm width
+        
+        let y = 20; // Starting Y position
+        const lineHeight = 6;
+        const maxY = 280; // Max Y before new page
+        
+        lines.forEach((line) => {
+          if (y > maxY) {
+            pdf.addPage();
+            y = 20;
+          }
+          pdf.text(line, 15, y); // 15mm left margin
+          y += lineHeight;
+        });
+        
+        pdf.save(`${fileName}.pdf`);
+      } catch (error) {
+        console.error('Error creating PDF:', error);
+        alert('Error creating PDF file. Please try TXT format.');
+      }
+    }
   };
 
   // Reset form
