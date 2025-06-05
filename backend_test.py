@@ -2,6 +2,7 @@
 import requests
 import sys
 import json
+import os
 import uuid
 from datetime import datetime
 
@@ -10,27 +11,22 @@ class ResumeOptimizerTester:
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
-        self.user_id = None
-        self.analysis_id = None
-        self.test_username = f"testuser_{uuid.uuid4().hex[:8]}"
-        self.test_email = f"test_{uuid.uuid4().hex[:8]}@example.com"
-        self.test_relationship_code = None
         
-    def run_test(self, name, method, endpoint, expected_status, data=None, print_response=False):
+    def run_test(self, name, method, endpoint, expected_status, data=None, files=None, print_response=False):
         """Run a single API test"""
         url = f"{self.base_url}{endpoint}"
-        headers = {'Content-Type': 'application/json'}
         
         self.tests_run += 1
         print(f"\n🔍 Testing {name}...")
         
         try:
             if method == 'GET':
-                response = requests.get(url, headers=headers)
+                response = requests.get(url)
             elif method == 'POST':
-                response = requests.post(url, json=data, headers=headers)
-            elif method == 'PUT':
-                response = requests.put(url, json=data, headers=headers)
+                if files:
+                    response = requests.post(url, data=data, files=files)
+                else:
+                    response = requests.post(url, data=data)
             
             success = response.status_code == expected_status
             
@@ -39,7 +35,10 @@ class ResumeOptimizerTester:
                 print(f"✅ Passed - Status: {response.status_code}")
                 if print_response:
                     try:
-                        print(f"Response: {json.dumps(response.json(), indent=2)}")
+                        json_response = response.json()
+                        # Print a truncated version of the response to avoid overwhelming output
+                        truncated_response = self._truncate_response(json_response)
+                        print(f"Response: {json.dumps(truncated_response, indent=2)}")
                     except:
                         print(f"Response: {response.text[:200]}...")
                 return True, response.json() if response.text else {}
@@ -51,6 +50,27 @@ class ResumeOptimizerTester:
         except Exception as e:
             print(f"❌ Failed - Error: {str(e)}")
             return False, {}
+    
+    def _truncate_response(self, json_obj, max_length=500):
+        """Truncate long string values in JSON response"""
+        if isinstance(json_obj, dict):
+            return {k: self._truncate_response(v, max_length) for k, v in json_obj.items()}
+        elif isinstance(json_obj, list):
+            return [self._truncate_response(item, max_length) for item in json_obj]
+        elif isinstance(json_obj, str) and len(json_obj) > max_length:
+            return json_obj[:max_length] + "..."
+        else:
+            return json_obj
+
+    def test_root_endpoint(self):
+        """Test the root endpoint"""
+        return self.run_test(
+            "Root Endpoint",
+            "GET",
+            "/api/",
+            200,
+            print_response=True
+        )
 
     def test_health_endpoint(self):
         """Test the health endpoint"""
@@ -58,46 +78,22 @@ class ResumeOptimizerTester:
             "Health Endpoint",
             "GET",
             "/api/health",
-            200
-        )
-
-    def test_create_user(self):
-        """Test user creation"""
-        success, response = self.run_test(
-            "User Creation",
-            "POST",
-            "/api/users",
             200,
-            data={"username": self.test_username, "email": self.test_email},
             print_response=True
         )
-        
-        if success and "user_id" in response:
-            self.user_id = response["user_id"]
-            print(f"Created test user with ID: {self.user_id}")
-            return True
-        return False
-
-    def test_get_user(self):
-        """Test getting user details"""
-        if not self.user_id:
-            print("❌ Cannot test get user - no user created")
-            return False
-            
+    
+    def test_ai_integration(self):
+        """Test the AI integration endpoint"""
         return self.run_test(
-            "Get User Details",
+            "AI Integration Test",
             "GET",
-            f"/api/users/{self.user_id}",
+            "/api/test-ai",
             200,
             print_response=True
-        )[0]
+        )
 
-    def test_analyze_resume(self):
-        """Test resume analysis"""
-        if not self.user_id:
-            print("❌ Cannot test resume analysis - no user created")
-            return False
-            
+    def test_analyze_with_text(self):
+        """Test resume analysis with text inputs"""
         job_description = """
         Senior Software Engineer
         
@@ -127,281 +123,267 @@ class ResumeOptimizerTester:
         - Git, GitHub
         """
         
-        success, response = self.run_test(
-            "Resume Analysis",
+        data = {
+            "job_description": job_description,
+            "resume_text": resume_text
+        }
+        
+        return self.run_test(
+            "Resume Analysis with Text Inputs",
             "POST",
-            f"/api/users/{self.user_id}/analyze-resume",
+            "/api/analyze",
             200,
-            data={
-                "job_description": job_description,
-                "resume_text": resume_text
-            },
+            data=data,
+            print_response=True
+        )
+
+    def test_analyze_with_pdf(self):
+        """Test resume analysis with PDF file upload"""
+        # Create a simple PDF file for testing
+        pdf_content = b"%PDF-1.4\n1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n2 0 obj\n<</Type/Pages/Kids[3 0 R]/Count 1>>\nendobj\n3 0 obj\n<</Type/Page/MediaBox[0 0 612 792]/Resources<<>>/Contents 4 0 R/Parent 2 0 R>>\nendobj\n4 0 obj\n<</Length 21>>\nstream\nBT\n/F1 12 Tf\n100 700 Td\n(John Doe - Software Engineer) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000010 00000 n\n0000000053 00000 n\n0000000102 00000 n\n0000000192 00000 n\ntrailer\n<</Size 5/Root 1 0 R>>\nstartxref\n264\n%%EOF"
+        
+        job_description = """
+        Senior Software Engineer
+        
+        Requirements:
+        - 5+ years of experience in Python development
+        - Experience with FastAPI, Django, or Flask
+        - Strong knowledge of RESTful API design
+        - Experience with MongoDB or other NoSQL databases
+        - Familiarity with React or other frontend frameworks
+        - Experience with Docker and Kubernetes
+        """
+        
+        # Create a temporary PDF file
+        with open('/tmp/test_resume.pdf', 'wb') as f:
+            f.write(pdf_content)
+        
+        # Prepare the multipart form data
+        files = {
+            'resume_file': ('test_resume.pdf', open('/tmp/test_resume.pdf', 'rb'), 'application/pdf')
+        }
+        
+        data = {
+            'job_description': job_description
+        }
+        
+        result = self.run_test(
+            "Resume Analysis with PDF Upload",
+            "POST",
+            "/api/analyze",
+            200,
+            data=data,
+            files=files,
             print_response=True
         )
         
-        if success:
-            print("Resume analysis completed successfully")
-            # Check if the analysis contains expected fields
-            if "analysis_id" in response:
-                self.analysis_id = response["analysis_id"]
-                print(f"Analysis ID: {self.analysis_id}")
-                return True
-        return False
-
-    def test_admin_get_users(self):
-        """Test admin endpoint to get all users"""
-        return self.run_test(
-            "Admin - Get All Users",
-            "GET",
-            "/api/admin/users",
-            200,
-            print_response=True
-        )[0]
-
-    def test_admin_get_config(self):
-        """Test admin endpoint to get configuration"""
-        return self.run_test(
-            "Admin - Get Configuration",
-            "GET",
-            "/api/admin/config",
-            200,
-            print_response=True
-        )[0]
-
-    def test_admin_update_user_status(self):
-        """Test admin endpoint to update user status"""
-        if not self.user_id:
-            print("❌ Cannot test user status update - no user created")
-            return False
-            
-        return self.run_test(
-            "Admin - Update User Status",
-            "PUT",
-            f"/api/admin/users/{self.user_id}/status",
-            200,
-            data={"is_free": True},
-            print_response=True
-        )[0]
+        # Clean up the temporary file
+        os.remove('/tmp/test_resume.pdf')
         
-    # New tests for relationship codes
-    def test_admin_create_relationship_code(self):
-        """Test creating a relationship code"""
-        code = f"TEST{uuid.uuid4().hex[:2].upper()}"
-        success, response = self.run_test(
-            "Admin - Create Relationship Code",
+        return result
+
+    def test_analyze_with_url(self):
+        """Test resume analysis with job description URL"""
+        # Note: Using a URL that won't be blocked by the server
+        job_description = "https://www.example.com/job-posting"
+        
+        resume_text = """
+        John Doe
+        Software Engineer
+        
+        Experience:
+        - Software Engineer at ABC Corp (2018-Present)
+          * Developed web applications using Django
+          * Implemented RESTful APIs
+          * Worked with PostgreSQL databases
+        
+        Skills:
+        - Python, JavaScript
+        - Django, Flask
+        - SQL, PostgreSQL
+        - Git, GitHub
+        """
+        
+        data = {
+            "job_description": job_description,
+            "resume_text": resume_text
+        }
+        
+        return self.run_test(
+            "Resume Analysis with Job Description URL",
             "POST",
-            "/api/admin/relationship-codes",
+            "/api/analyze",
+            200,  # This might return 400 if URL scraping fails, which is expected
+            data=data,
+            print_response=True
+        )
+
+    def test_analyze_missing_inputs(self):
+        """Test resume analysis with missing inputs"""
+        # Test with missing resume
+        data = {
+            "job_description": "Software Engineer job"
+        }
+        
+        return self.run_test(
+            "Resume Analysis with Missing Resume",
+            "POST",
+            "/api/analyze",
+            400,  # Expect a 400 Bad Request
+            data=data,
+            print_response=True
+        )
+
+    def test_generate_cover_letter_with_text(self):
+        """Test cover letter generation with text inputs"""
+        job_description = """
+        Senior Software Engineer
+        
+        Requirements:
+        - 5+ years of experience in Python development
+        - Experience with FastAPI, Django, or Flask
+        - Strong knowledge of RESTful API design
+        - Experience with MongoDB or other NoSQL databases
+        - Familiarity with React or other frontend frameworks
+        - Experience with Docker and Kubernetes
+        """
+        
+        resume_text = """
+        John Doe
+        Software Engineer
+        
+        Experience:
+        - Software Engineer at ABC Corp (2018-Present)
+          * Developed web applications using Django
+          * Implemented RESTful APIs
+          * Worked with PostgreSQL databases
+        
+        Skills:
+        - Python, JavaScript
+        - Django, Flask
+        - SQL, PostgreSQL
+        - Git, GitHub
+        """
+        
+        data = {
+            "job_description": job_description,
+            "resume_text": resume_text
+        }
+        
+        return self.run_test(
+            "Cover Letter Generation with Text Inputs",
+            "POST",
+            "/api/generate-cover-letter",
             200,
-            data={
-                "code": code,
-                "description": "Test relationship code",
-                "is_active": True
-            },
+            data=data,
+            print_response=True
+        )
+
+    def test_generate_cover_letter_with_pdf(self):
+        """Test cover letter generation with PDF file upload"""
+        # Create a simple PDF file for testing
+        pdf_content = b"%PDF-1.4\n1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n2 0 obj\n<</Type/Pages/Kids[3 0 R]/Count 1>>\nendobj\n3 0 obj\n<</Type/Page/MediaBox[0 0 612 792]/Resources<<>>/Contents 4 0 R/Parent 2 0 R>>\nendobj\n4 0 obj\n<</Length 21>>\nstream\nBT\n/F1 12 Tf\n100 700 Td\n(John Doe - Software Engineer) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000010 00000 n\n0000000053 00000 n\n0000000102 00000 n\n0000000192 00000 n\ntrailer\n<</Size 5/Root 1 0 R>>\nstartxref\n264\n%%EOF"
+        
+        job_description = """
+        Senior Software Engineer
+        
+        Requirements:
+        - 5+ years of experience in Python development
+        - Experience with FastAPI, Django, or Flask
+        - Strong knowledge of RESTful API design
+        - Experience with MongoDB or other NoSQL databases
+        - Familiarity with React or other frontend frameworks
+        - Experience with Docker and Kubernetes
+        """
+        
+        # Create a temporary PDF file
+        with open('/tmp/test_resume.pdf', 'wb') as f:
+            f.write(pdf_content)
+        
+        # Prepare the multipart form data
+        files = {
+            'resume_file': ('test_resume.pdf', open('/tmp/test_resume.pdf', 'rb'), 'application/pdf')
+        }
+        
+        data = {
+            'job_description': job_description
+        }
+        
+        result = self.run_test(
+            "Cover Letter Generation with PDF Upload",
+            "POST",
+            "/api/generate-cover-letter",
+            200,
+            data=data,
+            files=files,
             print_response=True
         )
         
-        if success:
-            self.test_relationship_code = code
-            print(f"Created test relationship code: {code}")
-            return True
-        return False
+        # Clean up the temporary file
+        os.remove('/tmp/test_resume.pdf')
         
-    def test_get_relationship_codes(self):
-        """Test getting all relationship codes"""
+        return result
+
+    def test_generate_cover_letter_missing_inputs(self):
+        """Test cover letter generation with missing inputs"""
+        # Test with missing resume
+        data = {
+            "job_description": "Software Engineer job"
+        }
+        
         return self.run_test(
-            "Admin - Get Relationship Codes",
-            "GET",
-            "/api/admin/relationship-codes",
-            200,
-            print_response=True
-        )[0]
-        
-    def test_check_relationship_code(self):
-        """Test checking a relationship code"""
-        if not self.test_relationship_code:
-            print("❌ Cannot test relationship code check - no code created")
-            return False
-            
-        return self.run_test(
-            "Check Relationship Code",
+            "Cover Letter Generation with Missing Resume",
             "POST",
-            "/api/relationship-codes/check",
-            200,
-            data={"code": self.test_relationship_code},
-            print_response=True
-        )[0]
-        
-    def test_apply_relationship_code(self):
-        """Test applying a relationship code to a user"""
-        if not self.user_id or not self.test_relationship_code:
-            print("❌ Cannot test applying relationship code - missing user or code")
-            return False
-            
-        return self.run_test(
-            "Apply Relationship Code",
-            "POST",
-            f"/api/users/{self.user_id}/apply-relationship-code",
-            200,
-            data={"code": self.test_relationship_code},
-            print_response=True
-        )[0]
-        
-    def test_login_with_specific_email(self):
-        """Test login with the specific test@example.com email"""
-        specific_email = "test@example.com"
-        print(f"\n🔍 Testing Login with specific email: {specific_email}...")
-        
-        success, response = self.run_test(
-            "Login with specific email",
-            "POST",
-            "/api/auth/login",
-            200,
-            data={"identifier": specific_email},
+            "/api/generate-cover-letter",
+            400,  # Expect a 400 Bad Request
+            data=data,
             print_response=True
         )
-        
-        if success and response.get("success"):
-            print(f"✅ Successfully logged in with email: {specific_email}")
-            self.user_id = response["user"]["id"]
-            return True, response["user"]
-        else:
-            print(f"❌ Failed to log in with email: {specific_email}")
-            return False, None
-            
-    # Tests for Apple Pay and download eligibility
-    def test_apple_pay_validate_merchant(self):
-        """Test Apple Pay merchant validation"""
-        return self.run_test(
-            "Apple Pay - Validate Merchant",
-            "POST",
-            "/api/apple-pay/validate-merchant",
-            200,
-            data={"validationURL": "https://apple-pay-gateway.apple.com/paymentservices/validatemerchant"},
-            print_response=True
-        )[0]
-        
-    def test_apple_pay_process_payment(self):
-        """Test Apple Pay payment processing"""
-        if not self.user_id or not self.analysis_id:
-            print("❌ Cannot test payment processing - missing user or analysis ID")
-            return False
-            
-        return self.run_test(
-            "Apple Pay - Process Payment",
-            "POST",
-            "/api/apple-pay/process-payment",
-            200,
-            data={
-                "payment_token": {
-                    "paymentData": "mock_payment_data",
-                    "paymentMethod": {
-                        "displayName": "Visa 1234",
-                        "network": "Visa",
-                        "type": "credit"
-                    },
-                    "transactionIdentifier": "mock_transaction_id"
-                },
-                "amount": 1.00,
-                "currency": "USD",
-                "user_id": self.user_id,
-                "analysis_id": self.analysis_id
-            },
-            print_response=True
-        )[0]
-        
-    def test_check_download_eligibility(self):
-        """Test checking download eligibility"""
-        if not self.user_id or not self.analysis_id:
-            print("❌ Cannot test download eligibility - missing user or analysis ID")
-            return False
-            
-        return self.run_test(
-            "Check Download Eligibility",
-            "GET",
-            f"/api/users/{self.user_id}/can-download/{self.analysis_id}",
-            200,
-            print_response=True
-        )[0]
-        
-    def test_existing_relationship_code(self):
-        """Test using the existing TEST01 relationship code"""
-        if not self.user_id:
-            print("❌ Cannot test existing relationship code - no user created")
-            return False
-            
-        return self.run_test(
-            "Apply Existing Relationship Code (TEST01)",
-            "POST",
-            f"/api/users/{self.user_id}/apply-relationship-code",
-            200,
-            data={"code": "TEST01"},
-            print_response=True
-        )[0]
-        
-    def test_existing_free_user(self):
-        """Test the existing free user with TEST01 code"""
-        return self.run_test(
-            "Get Existing Free User",
-            "GET",
-            "/api/users/34848618-b48a-420e-be1e-5cb95ae70bf5",
-            200,
-            print_response=True
-        )[0]
-
-def test_login_with_specific_email(self):
-    """Test login with the specific test@example.com email"""
-    specific_email = "test@example.com"
-    print(f"\n🔍 Testing Login with specific email: {specific_email}...")
-    
-    success, response = self.run_test(
-        "Login with specific email",
-        "POST",
-        "/api/auth/login",
-        200,
-        data={"identifier": specific_email},
-        print_response=True
-    )
-    
-    if success and response.get("success"):
-        print(f"✅ Successfully logged in with email: {specific_email}")
-        self.user_id = response["user"]["id"]
-        return True, response["user"]
-    else:
-        print(f"❌ Failed to log in with email: {specific_email}")
-        return False, None
 
 def main():
-    print("=" * 50)
+    print("=" * 80)
     print("RESUME OPTIMIZER API TEST SUITE")
-    print("=" * 50)
+    print("=" * 80)
     
-    tester = ResumeOptimizerTester()
+    # Get the backend URL from environment or use default
+    backend_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://eb93ec35-6dfc-49bd-8e54-894b4d016531.preview.emergentagent.com/api')
     
-    # Test health endpoint
+    # Remove '/api' from the end if it exists, as our test methods add it
+    if backend_url.endswith('/api'):
+        backend_url = backend_url[:-4]
+    
+    print(f"Testing backend at: {backend_url}")
+    tester = ResumeOptimizerTester(backend_url)
+    
+    # Basic API tests
+    print("\n" + "=" * 80)
+    print("TESTING BASIC API ENDPOINTS")
+    print("=" * 80)
+    tester.test_root_endpoint()
     tester.test_health_endpoint()
+    tester.test_ai_integration()
     
-    # Test login with specific email (test@example.com)
-    print("\n" + "=" * 50)
-    print("TESTING LOGIN WITH SPECIFIC EMAIL")
-    print("=" * 50)
-    login_success, user = tester.test_login_with_specific_email()
+    # Resume analysis tests
+    print("\n" + "=" * 80)
+    print("TESTING RESUME ANALYSIS ENDPOINT")
+    print("=" * 80)
+    tester.test_analyze_with_text()
+    tester.test_analyze_with_pdf()
+    tester.test_analyze_with_url()
+    tester.test_analyze_missing_inputs()
     
-    if not login_success:
-        print("Creating a new test user since login with specific email failed")
-        if tester.test_create_user():
-            tester.test_get_user()
-    
-    # Test resume analysis
-    print("\n" + "=" * 50)
-    print("TESTING RESUME ANALYSIS & RESULTS SCREEN")
-    print("=" * 50)
-    
-    tester.test_analyze_resume()
+    # Cover letter generation tests
+    print("\n" + "=" * 80)
+    print("TESTING COVER LETTER GENERATION ENDPOINT")
+    print("=" * 80)
+    tester.test_generate_cover_letter_with_text()
+    tester.test_generate_cover_letter_with_pdf()
+    tester.test_generate_cover_letter_missing_inputs()
     
     # Print results
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 80)
     print(f"TESTS PASSED: {tester.tests_passed}/{tester.tests_run}")
-    print("=" * 50)
+    print("=" * 80)
     
     return 0 if tester.tests_passed == tester.tests_run else 1
 
