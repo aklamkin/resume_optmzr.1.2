@@ -8,10 +8,13 @@ A free, professional resume optimization tool that uses AI to analyze your resum
 
 - **🤖 AI-Powered Analysis**: Advanced resume analysis using Google Gemini AI
 - **📊 Interactive Ratings**: Skills gap analysis, ATS keyword scoring, and overall resume rating
-- **✏️ Real-Time Editing**: Apply/remove AI suggestions with live preview
+- **📁 Smart File Upload**: Upload PDF or DOCX resume files with automatic text extraction
+- **🌐 URL Scraping**: Paste job posting URLs for automatic job description extraction
+- **✏️ Hybrid Input**: Choose between file upload OR text paste for maximum flexibility
+- **🔍 Keyword Analysis**: Color-coded keywords showing what's missing vs. already present
+- **✨ Real-Time Editing**: Apply/remove AI suggestions with live preview
 - **📝 Cover Letter Generation**: Generate both short (250 words) and long (full-page) cover letters
 - **🎨 Resizable Interface**: Drag-to-resize panels for optimal viewing
-- **🔍 Keyword Analysis**: Color-coded keywords showing what's missing vs. already present
 - **📱 Responsive Design**: Works on desktop, tablet, and mobile devices
 - **💰 Completely Free**: No accounts, no payments, no restrictions
 
