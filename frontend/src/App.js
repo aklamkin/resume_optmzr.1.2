@@ -349,6 +349,125 @@ function App() {
     }
   };
 
+  // Enhanced error handling for API calls
+  const handleApiError = async (error, operation) => {
+    console.log('🚨 API Error occurred:', error);
+    
+    try {
+      let errorDetail = null;
+      
+      // Try to parse error detail from response
+      if (error.response) {
+        errorDetail = await error.response.json();
+      } else if (error.message) {
+        // Check if message contains JSON error info
+        try {
+          errorDetail = JSON.parse(error.message);
+        } catch {
+          errorDetail = { message: error.message, retryable: true };
+        }
+      }
+      
+      // Check if it's a retryable error
+      if (errorDetail && errorDetail.retryable !== false) {
+        setRetryError(errorDetail);
+        setRetryOperation(operation);
+        setShowRetryDialog(true);
+        return true; // Handled as retryable
+      } else {
+        // Non-retryable error, show regular alert
+        alert(errorDetail?.message || error.message || 'An unexpected error occurred');
+        return false;
+      }
+    } catch (parseError) {
+      // If we can't parse the error, treat as non-retryable
+      alert(error.message || 'An unexpected error occurred');
+      return false;
+    }
+  };
+
+  // Retry operation with custom parameters
+  const handleRetryOperation = async () => {
+    setShowRetryDialog(false);
+    
+    if (retryOperation === 'analyze') {
+      await performAnalysis(customRetrySeconds, customRetryCount);
+    } else if (retryOperation === 'coverLetter') {
+      await performCoverLetterGeneration(customRetrySeconds, customRetryCount);
+    }
+  };
+
+  // Cancel retry operation
+  const cancelRetry = () => {
+    setShowRetryDialog(false);
+    setRetryError(null);
+    setRetryOperation(null);
+    setIsLoading(false);
+    setIsGeneratingCoverLetter(false);
+  };
+
+  // Perform analysis with retry logic
+  const performAnalysis = async (maxWaitSeconds = 30, maxRetries = 3) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 Analysis attempt ${attempt}/${maxRetries}`);
+        
+        const formData = new FormData();
+        formData.append('job_description', jobDescription);
+        
+        if (resumeFile) {
+          formData.append('resume_file', resumeFile);
+        } else {
+          formData.append('resume_text', resumeText);
+        }
+
+        const response = await fetch(`${API_BASE_URL}/analyze`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          // Success!
+          updateProgress(4);
+          await new Promise(resolve => setTimeout(resolve, 300));
+
+          const result = await response.json();
+          
+          updateProgress(5);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          setAnalysisResult(result);
+          const initialResume = result.original_resume || resumeText || '';
+          setOptimizedResume(initialResume);
+          console.log('✅ Analysis completed successfully');
+          return;
+          
+        } else {
+          const errorData = await response.json();
+          
+          // Check if this is the last attempt
+          if (attempt >= maxRetries) {
+            throw new Error(JSON.stringify(errorData.detail || errorData));
+          }
+          
+          // Wait before next attempt
+          const waitTime = Math.min(maxWaitSeconds / maxRetries * attempt, maxWaitSeconds);
+          console.log(`⏳ Waiting ${waitTime} seconds before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
+        }
+        
+      } catch (error) {
+        if (attempt >= maxRetries) {
+          throw error;
+        }
+        
+        const waitTime = Math.min(maxWaitSeconds / maxRetries * attempt, maxWaitSeconds);
+        console.log(`⏳ Error on attempt ${attempt}, waiting ${waitTime} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
+      }
+    }
+  };
+
   // Apply or remove suggestion with IMPROVED handling
   const toggleSuggestion = (index, suggestion) => {
     console.log('🔧 toggleSuggestion called:', { index, suggestion, appliedSuggestions: appliedSuggestions.has(index) });
