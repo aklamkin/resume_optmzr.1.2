@@ -415,7 +415,7 @@ async def analyze_resume(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/generate-cover-letter")
+@app.post("/api/generate-cover-letter")
 async def generate_cover_letter(
     job_description: str = Form(...),
     resume_text: Optional[str] = Form(None),
