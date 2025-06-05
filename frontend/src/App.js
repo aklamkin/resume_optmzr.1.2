@@ -45,6 +45,10 @@ function App() {
   // Download dropdown state
   const [showDownloadDropdown, setShowDownloadDropdown] = useState(false);
   const [showCoverLetterDropdown, setShowCoverLetterDropdown] = useState(false);
+  
+  // Ratings popup state
+  const [showRatingPopup, setShowRatingPopup] = useState(false);
+  const [selectedRating, setSelectedRating] = useState(null);
 
   // Handle panel resizing
   const handleMouseDown = useCallback((index) => (e) => {
