@@ -108,7 +108,7 @@ fi
 # Check API endpoints consistency
 echo "🔌 Checking API endpoints..."
 cd ..
-if grep -q "'/analyze'" backend/server.py && grep -q "'/generate-cover-letter'" backend/server.py; then
+if grep -q "@app.post(\"/analyze\")" backend/server.py && grep -q "@app.post(\"/generate-cover-letter\")" backend/server.py; then
     echo "✅ Backend API endpoints defined correctly"
 else
     echo "❌ Backend API endpoints missing"
