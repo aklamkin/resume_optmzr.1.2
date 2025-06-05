@@ -222,7 +222,7 @@ function App() {
     }
   };
 
-  // Apply or remove suggestion
+  // Apply or remove suggestion with better handling
   const toggleSuggestion = (index, suggestion) => {
     const newApplied = new Set(appliedSuggestions);
     
@@ -231,36 +231,53 @@ function App() {
       newApplied.delete(index);
       if (suggestion.current_text) {
         setOptimizedResume(prev => {
-          const updated = prev.replace(suggestion.suggested_text, suggestion.current_text);
-          console.log('Removing suggestion:', suggestion.suggested_text, '→', suggestion.current_text);
+          let updated = prev.replace(suggestion.suggested_text, suggestion.current_text);
+          
+          // If exact replacement doesn't work, try with line breaks
+          if (updated === prev) {
+            updated = prev.replace(`\n${suggestion.suggested_text}\n`, `\n${suggestion.current_text}\n`);
+          }
+          
+          // If still no change, try removing the [ADDED] prefix if it exists
+          if (updated === prev) {
+            updated = prev.replace(`[ADDED] ${suggestion.suggested_text}`, '');
+            updated = updated.replace(/\n\n\n+/g, '\n\n'); // Clean up extra newlines
+          }
+          
           return updated;
         });
       }
     } else {
       // Apply suggestion
       newApplied.add(index);
-      const currentResume = optimizedResume || analysisResult?.original_resume || resumeText;
       
       if (suggestion.current_text) {
         // Replace existing text
         setOptimizedResume(prev => {
-          const updated = prev.replace(suggestion.current_text, suggestion.suggested_text);
-          console.log('Applying suggestion - replacing:', suggestion.current_text, '→', suggestion.suggested_text);
+          let updated = prev.replace(suggestion.current_text, suggestion.suggested_text);
           
-          // If replacement didn't work (text not found), try a different approach
+          // If exact replacement doesn't work, try with different whitespace patterns
           if (updated === prev) {
-            console.log('Direct replacement failed, appending suggestion');
-            return `${prev}\n\n[ADDED] ${suggestion.suggested_text}`;
+            // Try replacing with normalized whitespace
+            const normalizedCurrent = suggestion.current_text.replace(/\s+/g, ' ').trim();
+            const normalizedPrev = prev.replace(/\s+/g, ' ');
+            if (normalizedPrev.includes(normalizedCurrent)) {
+              updated = prev.replace(suggestion.current_text, suggestion.suggested_text);
+            }
           }
+          
+          // If replacement still didn't work, add as new content with context
+          if (updated === prev) {
+            const section = suggestion.section || 'General';
+            updated = `${prev}\n\n[${section.toUpperCase()} UPDATE]\n${suggestion.suggested_text}`;
+          }
+          
           return updated;
         });
       } else {
         // Add new content
-        setOptimizedResume(prev => {
-          const updated = `${prev}\n\n${suggestion.suggested_text}`;
-          console.log('Adding new content:', suggestion.suggested_text);
-          return updated;
-        });
+        const section = suggestion.section || 'Additional';
+        setOptimizedResume(prev => `${prev}\n\n[NEW ${section.toUpperCase()}]\n${suggestion.suggested_text}`);
       }
     }
     
