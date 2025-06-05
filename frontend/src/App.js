@@ -95,7 +95,20 @@ function App() {
     setResizeIndex(null);
   }, []);
 
-  // Add event listeners
+  // Add event listeners for dropdown close
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showDownloadDropdown || showCoverLetterDropdown) {
+        setShowDownloadDropdown(false);
+        setShowCoverLetterDropdown(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showDownloadDropdown, showCoverLetterDropdown]);
+
+  // Add event listeners for resizing
   React.useEffect(() => {
     if (isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
