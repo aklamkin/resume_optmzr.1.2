@@ -767,6 +767,89 @@ function App() {
         </div>
       </div>
 
+      {/* Progress Modal */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6">
+            {/* Modal Header */}
+            <div className="text-center mb-6">
+              <div className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 mb-4">
+                <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Analyzing Your Resume</h3>
+              <p className="text-sm text-gray-600 mt-1">Please wait while we optimize your resume...</p>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="space-y-3">
+              {progressSteps.map((step, index) => (
+                <div key={step.id} className="flex items-center">
+                  <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                    step.status === 'completed' 
+                      ? 'bg-green-500 text-white' 
+                      : step.status === 'active'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {step.status === 'completed' ? (
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    ) : step.status === 'active' ? (
+                      <svg className="animate-spin w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 3a7 7 0 100 14 7 7 0 000-14zM10 1a9 9 0 110 18 9 9 0 010-18z" />
+                      </svg>
+                    ) : (
+                      step.id
+                    )}
+                  </div>
+                  <div className={`ml-3 text-sm font-medium ${
+                    step.status === 'completed' || step.status === 'active'
+                      ? 'text-gray-900' 
+                      : 'text-gray-500'
+                  }`}>
+                    {step.label}
+                  </div>
+                  {step.status === 'active' && (
+                    <div className="ml-auto">
+                      <div className="flex space-x-1">
+                        <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                        <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                        <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mt-6">
+              <div className="bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${(currentStep + 1) / progressSteps.length * 100}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>Progress</span>
+                <span>{Math.round((currentStep + 1) / progressSteps.length * 100)}%</span>
+              </div>
+            </div>
+
+            {/* Estimated Time */}
+            <div className="mt-4 text-center">
+              <p className="text-xs text-gray-500">
+                ⏱️ Estimated time: 10-30 seconds
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Rating Details Modal */}
       {showRatingPopup && selectedRating && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
