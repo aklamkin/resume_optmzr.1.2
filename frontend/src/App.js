@@ -1143,7 +1143,7 @@ function App() {
               
               {selectedRating.type === 'keywords' && selectedRating.items.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Important ATS Keywords:</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">ATS Keywords:</h3>
                   
                   {/* Legend */}
                   <div className="flex items-center space-x-4 mb-4 text-sm">
@@ -1153,24 +1153,46 @@ function App() {
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-3 h-3 bg-orange-200 border border-orange-400 rounded"></div>
-                      <span className="text-gray-600">Missing - should add</span>
+                      <span className="text-gray-600">Missing - can be added</span>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-1 gap-3">
                     {selectedRating.items.map((keyword, index) => {
                       const exists = isKeywordInResume(keyword);
                       return (
-                        <span 
-                          key={index} 
-                          className={`px-3 py-2 rounded-full text-sm font-medium border-2 ${
-                            exists 
-                              ? 'bg-green-50 border-green-300 text-green-800' 
-                              : 'bg-orange-50 border-orange-400 text-orange-900 font-bold shadow-md'
-                          }`}
-                        >
-                          {exists ? '✓ ' : '+ '}{keyword}
-                        </span>
+                        <div key={index} className={`flex items-center justify-between p-3 rounded-lg border-2 ${
+                          exists 
+                            ? 'bg-green-50 border-green-300' 
+                            : 'bg-orange-50 border-orange-400'
+                        }`}>
+                          <span className={`font-medium ${
+                            exists ? 'text-green-800' : 'text-orange-900'
+                          }`}>
+                            {exists ? '✓' : '+'} {keyword}
+                          </span>
+                          {!exists ? (
+                            <button
+                              onClick={() => addKeywordToResume(keyword)}
+                              className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-medium hover:bg-blue-700 transition-all duration-200 flex items-center space-x-1"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                              </svg>
+                              <span>Add</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => removeFromResume(keyword)}
+                              className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium hover:bg-red-700 transition-all duration-200 flex items-center space-x-1"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                              </svg>
+                              <span>Remove</span>
+                            </button>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -1181,9 +1203,9 @@ function App() {
                       <span className="font-semibold">
                         {selectedRating.items.filter(k => isKeywordInResume(k)).length} of {selectedRating.items.length}
                       </span> keywords found in your resume. 
-                      <span className="font-semibold text-orange-700 ml-1">
-                        Focus on adding the missing keywords
-                      </span> to improve ATS compatibility.
+                      <span className="font-semibold text-blue-700 ml-1">
+                        Click "Add" to include missing keywords directly in your resume!
+                      </span>
                     </p>
                   </div>
                 </div>
