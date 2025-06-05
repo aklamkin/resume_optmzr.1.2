@@ -531,15 +531,29 @@ async def analyze_resume(
         
         print(f"✅ Processing analysis - Job desc: {len(processed_job_desc)} chars, Resume: {len(processed_resume_text)} chars")
         
-        # Get AI analysis
-        analysis_result = await get_ai_response(
+        # Get AI analysis with retry capability
+        ai_result = await get_ai_response_with_retry(
             processed_job_desc, 
             processed_resume_text
         )
         
+        # Check if AI analysis was successful
+        if not ai_result.success:
+            # Return detailed error information for frontend to handle
+            raise HTTPException(
+                status_code=503,  # Service Unavailable
+                detail={
+                    "error_type": ai_result.error.error_type,
+                    "message": ai_result.error.message,
+                    "retryable": ai_result.error.retryable,
+                    "retry_after_seconds": ai_result.error.retry_after_seconds,
+                    "details": ai_result.error.details
+                }
+            )
+        
         return {
             "analysis_id": str(uuid.uuid4()),
-            "analysis": analysis_result,
+            "analysis": ai_result.data["analysis"],
             "original_resume": processed_resume_text,
             "job_description": processed_job_desc,
             "created_at": datetime.utcnow(),
