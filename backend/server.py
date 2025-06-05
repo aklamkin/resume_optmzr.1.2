@@ -321,23 +321,23 @@ Format the response as JSON with this structure:
 
 # API Routes
 
-@app.get("/")
+@app.get("/api/")
 async def root():
     return {
         "message": "Resume Optimizer API v1.0", 
         "status": "healthy",
         "endpoints": {
-            "health": "/health",
-            "analyze": "/analyze",
-            "generate_cover_letter": "/generate-cover-letter"
+            "health": "/api/health",
+            "analyze": "/api/analyze",
+            "generate_cover_letter": "/api/generate-cover-letter"
         }
     }
 
-@app.get("/health")
+@app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "version": "1.0.0"}
 
-@app.post("/analyze")
+@app.post("/api/analyze")
 async def analyze_resume(
     job_description: str = Form(...),
     resume_text: Optional[str] = Form(None),
