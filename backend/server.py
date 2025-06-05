@@ -76,6 +76,13 @@ def is_url_only(text: str) -> bool:
 def scrape_job_description(url: str) -> str:
     """Scrape job description from URL"""
     try:
+        # Check for known problematic sites
+        if 'linkedin.com' in url.lower():
+            raise HTTPException(status_code=400, detail="LinkedIn blocks automated access. Please copy and paste the job description text directly instead of using the URL.")
+        
+        if 'indeed.com' in url.lower():
+            raise HTTPException(status_code=400, detail="Indeed may block automated access. If this fails, please copy and paste the job description text directly.")
+        
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
@@ -126,9 +133,14 @@ def scrape_job_description(url: str) -> str:
         return cleaned_text
         
     except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}")
+        if "403" in str(e) or "Forbidden" in str(e):
+            raise HTTPException(status_code=400, detail=f"Website blocks automated access. Please copy and paste the job description text directly instead of using the URL.")
+        elif "404" in str(e) or "Not Found" in str(e):
+            raise HTTPException(status_code=400, detail=f"Job posting not found at this URL. Please check the URL or copy and paste the job description text directly.")
+        else:
+            raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}. Try copying and pasting the job description text directly.")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to scrape job description: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Failed to scrape job description: {str(e)}. Please copy and paste the job description text directly instead of using the URL.")
 
 # AI Integration using emergentintegrations
 async def get_ai_response(job_description: str, resume_text: str):
