@@ -447,6 +447,8 @@ function App() {
     setShowRatingPopup(false);
     setSelectedRating(null);
     setIsEditingResume(false);
+    setShowDownloadDropdown(false);
+    setShowCoverLetterDropdown(false);
   };
 
   // Handle file selection
