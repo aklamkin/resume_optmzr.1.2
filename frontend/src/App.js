@@ -1464,7 +1464,10 @@ function App() {
                   </button>
                   
                   {showCoverLetterDropdown && (
-                    <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[140px]">
+                    <div 
+                      className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[140px]"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="py-2">
                         <button
                           onClick={() => { downloadCoverLetter('txt'); setShowCoverLetterDropdown(false); }}
