@@ -569,10 +569,16 @@ function App() {
               >
                 <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex-shrink-0">
                   <h3 className="font-semibold text-gray-900">Original Resume</h3>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {analysisResult?.source_info?.resume_source === 'file' 
+                      ? `📄 From ${analysisResult.source_info.file_type?.toUpperCase()} file`
+                      : '📝 From text input'
+                    }
+                  </div>
                 </div>
                 <div className="flex-1 p-4 overflow-auto">
                   <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
-                    {resumeText}
+                    {analysisResult?.original_resume || resumeText}
                   </pre>
                 </div>
               </div>
