@@ -833,7 +833,7 @@ function App() {
     setOptimizedResume(newText);
   };
 
-  // Add skill to resume - IMPROVED VERSION
+  // Add skill to resume - IMPROVED SKILLS SECTION TARGETING
   const addSkillToResume = (skill) => {
     console.log('🎯 Adding skill:', skill);
     
@@ -853,49 +853,122 @@ function App() {
       return;
     }
     
-    // Look for various skills section patterns
+    // Enhanced skills section patterns (more comprehensive)
     const skillsPatterns = [
-      /(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills|CORE COMPETENCIES|Core Competencies|KEY SKILLS|Key Skills)([\s\S]*?)(?=\n[A-Z][A-Z\s]*\n|\n\n[A-Z]|$)/i,
-      /(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills|CORE COMPETENCIES|Core Competencies|KEY SKILLS|Key Skills)([\s\S]*?)(?=\n\n|\n[A-Z]{3,}|$)/i
+      // Standard headers
+      /^(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills|CORE COMPETENCIES|Core Competencies|KEY SKILLS|Key Skills|EXPERTISE|Expertise|COMPETENCIES|Competencies)[\s]*:?[\s]*\n((?:(?!^\n*[A-Z][A-Z\s]*:?\n)[\s\S])*)/im,
+      
+      // Headers with bullet points or lists
+      /^(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills|CORE COMPETENCIES|Core Competencies|KEY SKILLS|Key Skills)[\s]*:?[\s]*\n((?:[\s]*[•\-\*][\s\S]*?(?=\n\n|\n[A-Z][A-Z\s]*:?|\n[A-Z][a-z\s]*:?|$))*)/im,
+      
+      // Skills with underlines or decorations
+      /^(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills)[\s]*\n[-=_]{3,}\n((?:(?!^\n*[A-Z][A-Z\s]*:?\n)[\s\S])*?)(?=\n\n[A-Z]|$)/im,
+      
+      // Skills in parentheses or with special formatting
+      /^(SKILLS|Skills)[\s]*\([^)]*\)[\s]*:?[\s]*\n((?:(?!^\n*[A-Z][A-Z\s]*:?\n)[\s\S])*)/im
     ];
     
     let updatedResume = currentResume;
     let skillAdded = false;
+    let matchInfo = null;
     
-    // Try to add to existing skills section
-    for (const pattern of skillsPatterns) {
+    // Try to find existing skills section with detailed matching
+    for (let i = 0; i < skillsPatterns.length; i++) {
+      const pattern = skillsPatterns[i];
       const match = currentResume.match(pattern);
+      
       if (match) {
-        console.log('✅ Found existing skills section');
-        const skillsSection = match[0];
-        const updatedSkillsSection = skillsSection + (skillsSection.endsWith('\n') ? '' : '\n') + `• ${skill}`;
-        updatedResume = currentResume.replace(pattern, updatedSkillsSection);
+        console.log(`✅ Found skills section using pattern ${i + 1}`);
+        console.log('Header:', match[1]);
+        console.log('Content preview:', match[2].substring(0, 100) + '...');
+        
+        const fullMatch = match[0];
+        const header = match[1];
+        const content = match[2];
+        
+        // Determine the best insertion method based on content format
+        let newSkillsSection;
+        
+        if (content.includes('•') || content.includes('-') || content.includes('*')) {
+          // Bullet point format
+          const bulletChar = content.includes('•') ? '•' : (content.includes('-') ? '-' : '*');
+          newSkillsSection = `${header}\n${content.trimEnd()}\n${bulletChar} ${skill}`;
+        } else if (content.includes(',')) {
+          // Comma-separated format
+          newSkillsSection = `${header}\n${content.trimEnd()}, ${skill}`;
+        } else if (content.includes('|')) {
+          // Pipe-separated format
+          newSkillsSection = `${header}\n${content.trimEnd()} | ${skill}`;
+        } else if (content.trim().length > 0) {
+          // Has content but unclear format - add as bullet
+          newSkillsSection = `${header}\n${content.trimEnd()}\n• ${skill}`;
+        } else {
+          // Empty skills section
+          newSkillsSection = `${header}\n• ${skill}`;
+        }
+        
+        updatedResume = currentResume.replace(pattern, newSkillsSection);
         skillAdded = true;
-        console.log('📝 Added to existing skills section');
+        matchInfo = { pattern: i + 1, header: header };
+        console.log('📝 Updated skills section with new format');
         break;
       }
     }
     
-    // If no skills section found, add a new one
+    // If no skills section found, try to find a good insertion point
     if (!skillAdded) {
-      console.log('📝 Creating new skills section');
-      updatedResume = currentResume + `\n\n[ADDED SKILLS]\n• ${skill}`;
+      console.log('📝 No existing skills section found, creating new one');
+      
+      // Try to find a good insertion point (after summary/objective, before experience)
+      const insertionPatterns = [
+        // After summary/objective
+        /(^(SUMMARY|Summary|OBJECTIVE|Objective|PROFILE|Profile|PROFESSIONAL SUMMARY|Professional Summary)[\s\S]*?)(\n\n)(^[A-Z][A-Z\s]*)/im,
+        // After education (less preferred)
+        /(^(EDUCATION|Education)[\s\S]*?)(\n\n)(^[A-Z][A-Z\s]*)/im,
+        // Before experience
+        /(\n\n)(^(EXPERIENCE|Experience|WORK EXPERIENCE|Work Experience|EMPLOYMENT|Employment))/im
+      ];
+      
+      let inserted = false;
+      for (const pattern of insertionPatterns) {
+        if (pattern.test(currentResume)) {
+          updatedResume = currentResume.replace(pattern, (match, p1, p2, p3, p4) => {
+            if (p4) {
+              // Insert before the next section
+              return `${p1}${p3}SKILLS\n• ${skill}${p3}${p4}`;
+            } else {
+              // Insert before experience
+              return `${p1}SKILLS\n• ${skill}${p3}${p2}`;
+            }
+          });
+          inserted = true;
+          console.log('📝 Inserted skills section at strategic location');
+          break;
+        }
+      }
+      
+      // Fallback: add at the end
+      if (!inserted) {
+        const hasTrailingNewlines = /\n\n$/.test(currentResume);
+        const separator = hasTrailingNewlines ? '' : '\n\n';
+        updatedResume = currentResume + `${separator}SKILLS\n• ${skill}`;
+        console.log('📝 Added skills section at end of resume');
+      }
     }
     
     setOptimizedResume(updatedResume);
     console.log('✅ Skill added successfully. New resume length:', updatedResume.length);
     
-    // Visual feedback
-    const successMessage = `✅ "${skill}" has been added to your resume!`;
-    console.log(successMessage);
+    if (matchInfo) {
+      console.log(`Added to existing skills section (pattern ${matchInfo.pattern}, header: "${matchInfo.header}")`);
+    }
     
-    // Optional: Show a brief success indicator (you can remove this alert if you prefer)
-    setTimeout(() => {
-      console.log('Skill addition completed');
-    }, 100);
+    // Visual feedback
+    const successMessage = `✅ "${skill}" has been added to your Skills section!`;
+    console.log(successMessage);
   };
 
-  // Add keyword to resume - IMPROVED VERSION
+  // Add keyword to resume - IMPROVED SKILLS SECTION TARGETING
   const addKeywordToResume = (keyword) => {
     console.log('🔑 Adding keyword:', keyword);
     
@@ -915,52 +988,147 @@ function App() {
       return;
     }
     
-    // Look for skills section first, then summary
-    const skillsRegex = /(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills|CORE COMPETENCIES|Core Competencies|KEY SKILLS|Key Skills)([\s\S]*?)(?=\n[A-Z][A-Z\s]*\n|\n\n[A-Z]|$)/i;
-    const summaryRegex = /(SUMMARY|Summary|PROFILE|Profile|OBJECTIVE|Objective|PROFESSIONAL SUMMARY|Professional Summary)([\s\S]*?)(?=\n[A-Z][A-Z\s]*\n|\n\n[A-Z]|$)/i;
+    // Enhanced skills section patterns (same as addSkillToResume for consistency)
+    const skillsPatterns = [
+      // Standard headers
+      /^(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills|CORE COMPETENCIES|Core Competencies|KEY SKILLS|Key Skills|EXPERTISE|Expertise|COMPETENCIES|Competencies)[\s]*:?[\s]*\n((?:(?!^\n*[A-Z][A-Z\s]*:?\n)[\s\S])*)/im,
+      
+      // Headers with bullet points or lists
+      /^(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills|CORE COMPETENCIES|Core Competencies|KEY SKILLS|Key Skills)[\s]*:?[\s]*\n((?:[\s]*[•\-\*][\s\S]*?(?=\n\n|\n[A-Z][A-Z\s]*:?|\n[A-Z][a-z\s]*:?|$))*)/im,
+      
+      // Skills with underlines or decorations
+      /^(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills)[\s]*\n[-=_]{3,}\n((?:(?!^\n*[A-Z][A-Z\s]*:?\n)[\s\S])*?)(?=\n\n[A-Z]|$)/im,
+      
+      // Skills in parentheses or with special formatting
+      /^(SKILLS|Skills)[\s]*\([^)]*\)[\s]*:?[\s]*\n((?:(?!^\n*[A-Z][A-Z\s]*:?\n)[\s\S])*)/im
+    ];
     
     let updatedResume = currentResume;
     let keywordAdded = false;
+    let addedToSkills = false;
     
-    // Try to add to skills section first
-    const skillsMatch = currentResume.match(skillsRegex);
-    if (skillsMatch) {
-      console.log('✅ Adding to skills section');
-      const skillsSection = skillsMatch[0];
-      const updatedSkillsSection = skillsSection + (skillsSection.endsWith('\n') ? '' : '\n') + `• ${keyword}`;
-      updatedResume = currentResume.replace(skillsRegex, updatedSkillsSection);
-      keywordAdded = true;
-    } else {
-      // Try to add to summary section
-      const summaryMatch = currentResume.match(summaryRegex);
-      if (summaryMatch) {
-        console.log('✅ Adding to summary section');
-        const summarySection = summaryMatch[0];
-        let updatedSummarySection;
+    // First priority: Try to add to skills section
+    for (let i = 0; i < skillsPatterns.length; i++) {
+      const pattern = skillsPatterns[i];
+      const match = currentResume.match(pattern);
+      
+      if (match) {
+        console.log(`✅ Found skills section for keyword using pattern ${i + 1}`);
         
-        // Smart insertion into summary
-        if (summarySection.endsWith('.')) {
-          updatedSummarySection = summarySection.slice(0, -1) + ` with expertise in ${keyword}.`;
+        const fullMatch = match[0];
+        const header = match[1];
+        const content = match[2];
+        
+        // Determine the best insertion method based on content format
+        let newSkillsSection;
+        
+        if (content.includes('•') || content.includes('-') || content.includes('*')) {
+          // Bullet point format
+          const bulletChar = content.includes('•') ? '•' : (content.includes('-') ? '-' : '*');
+          newSkillsSection = `${header}\n${content.trimEnd()}\n${bulletChar} ${keyword}`;
+        } else if (content.includes(',')) {
+          // Comma-separated format
+          newSkillsSection = `${header}\n${content.trimEnd()}, ${keyword}`;
+        } else if (content.includes('|')) {
+          // Pipe-separated format
+          newSkillsSection = `${header}\n${content.trimEnd()} | ${keyword}`;
+        } else if (content.trim().length > 0) {
+          // Has content but unclear format - add as bullet
+          newSkillsSection = `${header}\n${content.trimEnd()}\n• ${keyword}`;
         } else {
-          updatedSummarySection = summarySection + ` Experienced in ${keyword}.`;
+          // Empty skills section
+          newSkillsSection = `${header}\n• ${keyword}`;
         }
         
-        updatedResume = currentResume.replace(summaryRegex, updatedSummarySection);
+        updatedResume = currentResume.replace(pattern, newSkillsSection);
         keywordAdded = true;
+        addedToSkills = true;
+        console.log('📝 Added keyword to existing skills section');
+        break;
       }
     }
     
-    // If no suitable section found, create a new skills section
+    // Second priority: If no skills section found, try to add to summary section
+    if (!keywordAdded) {
+      console.log('🔍 No skills section found, trying summary section');
+      
+      const summaryPatterns = [
+        /^(SUMMARY|Summary|PROFILE|Profile|OBJECTIVE|Objective|PROFESSIONAL SUMMARY|Professional Summary)[\s]*:?[\s]*\n((?:(?!^\n*[A-Z][A-Z\s]*:?\n)[\s\S])*)/im
+      ];
+      
+      for (const pattern of summaryPatterns) {
+        const summaryMatch = currentResume.match(pattern);
+        if (summaryMatch) {
+          console.log('✅ Adding keyword to summary section');
+          const summarySection = summaryMatch[0];
+          let updatedSummarySection;
+          
+          // Smart insertion into summary
+          if (summarySection.endsWith('.')) {
+            updatedSummarySection = summarySection.slice(0, -1) + ` with expertise in ${keyword}.`;
+          } else if (summarySection.endsWith('\n')) {
+            updatedSummarySection = summarySection.trimEnd() + ` Experienced in ${keyword}.\n`;
+          } else {
+            updatedSummarySection = summarySection + ` Experienced in ${keyword}.`;
+          }
+          
+          updatedResume = currentResume.replace(pattern, updatedSummarySection);
+          keywordAdded = true;
+          console.log('📝 Added keyword to summary section');
+          break;
+        }
+      }
+    }
+    
+    // Final fallback: Create new skills section
     if (!keywordAdded) {
       console.log('📝 Creating new skills section for keyword');
-      updatedResume = currentResume + `\n\n[ADDED SKILLS]\n• ${keyword}`;
+      
+      // Try to find a good insertion point (same logic as addSkillToResume)
+      const insertionPatterns = [
+        // After summary/objective
+        /(^(SUMMARY|Summary|OBJECTIVE|Objective|PROFILE|Profile|PROFESSIONAL SUMMARY|Professional Summary)[\s\S]*?)(\n\n)(^[A-Z][A-Z\s]*)/im,
+        // After education
+        /(^(EDUCATION|Education)[\s\S]*?)(\n\n)(^[A-Z][A-Z\s]*)/im,
+        // Before experience
+        /(\n\n)(^(EXPERIENCE|Experience|WORK EXPERIENCE|Work Experience|EMPLOYMENT|Employment))/im
+      ];
+      
+      let inserted = false;
+      for (const pattern of insertionPatterns) {
+        if (pattern.test(currentResume)) {
+          updatedResume = currentResume.replace(pattern, (match, p1, p2, p3, p4) => {
+            if (p4) {
+              // Insert before the next section
+              return `${p1}${p3}SKILLS\n• ${keyword}${p3}${p4}`;
+            } else {
+              // Insert before experience
+              return `${p1}SKILLS\n• ${keyword}${p3}${p2}`;
+            }
+          });
+          inserted = true;
+          addedToSkills = true;
+          console.log('📝 Created new skills section at strategic location');
+          break;
+        }
+      }
+      
+      // Ultimate fallback: add at the end
+      if (!inserted) {
+        const hasTrailingNewlines = /\n\n$/.test(currentResume);
+        const separator = hasTrailingNewlines ? '' : '\n\n';
+        updatedResume = currentResume + `${separator}SKILLS\n• ${keyword}`;
+        addedToSkills = true;
+        console.log('📝 Added new skills section at end of resume');
+      }
     }
     
     setOptimizedResume(updatedResume);
     console.log('✅ Keyword added successfully. New resume length:', updatedResume.length);
     
-    // Visual feedback
-    const successMessage = `✅ "${keyword}" has been added to your resume!`;
+    // Visual feedback with specific location info
+    const location = addedToSkills ? 'Skills section' : 'Summary section';
+    const successMessage = `✅ "${keyword}" has been added to your ${location}!`;
     console.log(successMessage);
   };
 
