@@ -1,5 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import './App.css';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
+import jsPDF from 'jspdf';
 
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
