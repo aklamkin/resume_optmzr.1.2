@@ -1,12 +1,22 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import os
 import uuid
+import json
+import re
 from datetime import datetime
+import requests
+from bs4 import BeautifulSoup
+import pdfplumber
+from docx import Document
 
-app = FastAPI()
+app = FastAPI(
+    title="Resume Optimizer API",
+    description="AI-powered resume optimization backend",
+    version="1.0.0"
+)
 
 # CORS middleware
 app.add_middleware(
@@ -20,7 +30,105 @@ app.add_middleware(
 # Pydantic models
 class ResumeAnalysisRequest(BaseModel):
     job_description: str
-    resume_text: str
+    resume_text: Optional[str] = None
+
+# Helper functions for file processing
+def extract_text_from_pdf(file_content: bytes) -> str:
+    """Extract text from PDF file"""
+    try:
+        import io
+        pdf_file = io.BytesIO(file_content)
+        
+        text = ""
+        with pdfplumber.open(pdf_file) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+        
+        return text.strip()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to extract text from PDF: {str(e)}")
+
+def extract_text_from_docx(file_content: bytes) -> str:
+    """Extract text from DOCX file"""
+    try:
+        import io
+        docx_file = io.BytesIO(file_content)
+        
+        doc = Document(docx_file)
+        text = ""
+        
+        for paragraph in doc.paragraphs:
+            text += paragraph.text + "\n"
+            
+        return text.strip()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to extract text from DOCX: {str(e)}")
+
+def is_url_only(text: str) -> bool:
+    """Check if text is a single URL"""
+    text = text.strip()
+    # Check if it's a single URL (starts with http/https, no spaces, no newlines)
+    url_pattern = r'^https?://[^\s\n]+$'
+    return bool(re.match(url_pattern, text))
+
+def scrape_job_description(url: str) -> str:
+    """Scrape job description from URL"""
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Remove script and style elements
+        for script in soup(["script", "style"]):
+            script.decompose()
+        
+        # Try to find job description in common elements
+        job_content = ""
+        
+        # Common job posting selectors
+        selectors = [
+            '[class*="job-description"]',
+            '[class*="job-details"]', 
+            '[class*="description"]',
+            '[id*="job-description"]',
+            '[id*="description"]',
+            'main',
+            '.content',
+            '#content'
+        ]
+        
+        for selector in selectors:
+            element = soup.select_one(selector)
+            if element:
+                job_content = element.get_text(strip=True, separator='\n')
+                if len(job_content) > 200:  # If we found substantial content
+                    break
+        
+        # If no specific element found, get all text
+        if not job_content or len(job_content) < 200:
+            job_content = soup.get_text(strip=True, separator='\n')
+        
+        # Clean up the text
+        lines = [line.strip() for line in job_content.split('\n') if line.strip()]
+        cleaned_text = '\n'.join(lines)
+        
+        # Limit to reasonable length (first 5000 characters)
+        if len(cleaned_text) > 5000:
+            cleaned_text = cleaned_text[:5000] + "..."
+            
+        return cleaned_text
+        
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to scrape job description: {str(e)}")
 
 # AI Integration using emergentintegrations
 async def get_ai_response(job_description: str, resume_text: str):
@@ -63,8 +171,12 @@ Format your response as JSON with the following structure:
 }"""
 
         # Create AI chat instance
+        api_key = os.environ.get('GEMINI_API_KEY')
+        if not api_key:
+            raise HTTPException(status_code=500, detail="Gemini API key not configured")
+            
         chat = LlmChat(
-            api_key="AIzaSyAjCoNRO-JjV3BogCG-Z7mJipzbd7puXrw",
+            api_key=api_key,
             session_id=f"resume_analysis_{uuid.uuid4()}",
             system_message=system_prompt
         ).with_model("gemini", "gemini-2.0-flash")
@@ -101,36 +213,7 @@ Format your response as JSON with the following structure:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")
 
-# API Routes
-
-@app.get("/api/health")
-async def health_check():
-    return {"status": "healthy"}
-
-@app.post("/api/analyze")
-async def analyze_resume(request: ResumeAnalysisRequest):
-    """Analyze resume against job description using AI"""
-    try:
-        # Get AI analysis
-        analysis_result = await get_ai_response(
-            request.job_description, 
-            request.resume_text
-        )
-        
-        return {
-            "analysis_id": str(uuid.uuid4()),
-            "analysis": analysis_result,
-            "original_resume": request.resume_text,
-            "job_description": request.job_description,
-            "created_at": datetime.utcnow()
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/generate-cover-letter")
-async def generate_cover_letter(request: ResumeAnalysisRequest):
-    """Generate a cover letter based on resume and job description"""
+async def get_cover_letter_response(job_description: str, resume_text: str):
     try:
         # Import the emergentintegrations library
         from emergentintegrations.llm.chat import LlmChat, UserMessage
@@ -174,8 +257,12 @@ Format the response as JSON with this structure:
 }"""
 
         # Create AI chat instance
+        api_key = os.environ.get('GEMINI_API_KEY')
+        if not api_key:
+            raise HTTPException(status_code=500, detail="Gemini API key not configured")
+            
         chat = LlmChat(
-            api_key="AIzaSyAjCoNRO-JjV3BogCG-Z7mJipzbd7puXrw",
+            api_key=api_key,
             session_id=f"cover_letter_{uuid.uuid4()}",
             system_message=system_prompt
         ).with_model("gemini", "gemini-2.0-flash")
@@ -184,10 +271,10 @@ Format the response as JSON with this structure:
         user_message = UserMessage(
             text=f"""
             JOB DESCRIPTION:
-            {request.job_description}
+            {job_description}
             
             CANDIDATE'S RESUME:
-            {request.resume_text}
+            {resume_text}
             
             Please generate TWO professional cover letters (short and long versions) that specifically address the requirements in the job description and highlight the most relevant qualifications from the resume. Make them compelling, specific, and professional.
             
@@ -212,7 +299,6 @@ Format the response as JSON with this structure:
                 if end_index > start_index:
                     cleaned_response = cleaned_response[start_index:end_index].strip()
             
-            import json
             parsed_response = json.loads(cleaned_response)
             
             return {
@@ -232,5 +318,157 @@ Format the response as JSON with this structure:
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Cover letter generation failed: {str(e)}")
+
+# API Routes
+
+@app.get("/")
+async def root():
+    return {
+        "message": "Resume Optimizer API v1.0", 
+        "status": "healthy",
+        "endpoints": {
+            "health": "/health",
+            "analyze": "/analyze",
+            "generate_cover_letter": "/generate-cover-letter"
+        }
+    }
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "version": "1.0.0"}
+
+@app.post("/analyze")
+async def analyze_resume(
+    job_description: str = Form(...),
+    resume_text: Optional[str] = Form(None),
+    resume_file: Optional[UploadFile] = File(None)
+):
+    """Analyze resume against job description using AI - supports file upload and URL scraping"""
+    try:
+        # Process job description (detect URL vs text)
+        processed_job_desc = job_description
+        if is_url_only(job_description):
+            print(f"🌐 Detected URL, scraping job description from: {job_description}")
+            processed_job_desc = scrape_job_description(job_description)
+        
+        # Process resume (file vs text)
+        processed_resume_text = ""
+        
+        if resume_file:
+            print(f"📁 Processing uploaded file: {resume_file.filename}")
+            
+            # Validate file type
+            if not resume_file.filename:
+                raise HTTPException(status_code=400, detail="No filename provided")
+            
+            file_ext = resume_file.filename.lower().split('.')[-1]
+            if file_ext not in ['pdf', 'docx']:
+                raise HTTPException(status_code=400, detail="Only PDF and DOCX files are supported")
+            
+            # Read file content
+            file_content = await resume_file.read()
+            
+            # Extract text based on file type
+            if file_ext == 'pdf':
+                processed_resume_text = extract_text_from_pdf(file_content)
+            elif file_ext == 'docx':
+                processed_resume_text = extract_text_from_docx(file_content)
+            
+            if not processed_resume_text.strip():
+                raise HTTPException(status_code=400, detail="No text could be extracted from the uploaded file")
+                
+        elif resume_text:
+            processed_resume_text = resume_text.strip()
+        else:
+            raise HTTPException(status_code=400, detail="Either resume_text or resume_file must be provided")
+        
+        # Validate we have both job description and resume
+        if not processed_job_desc.strip():
+            raise HTTPException(status_code=400, detail="Job description is required")
+        
+        if not processed_resume_text.strip():
+            raise HTTPException(status_code=400, detail="Resume content is required")
+        
+        print(f"✅ Processing analysis - Job desc: {len(processed_job_desc)} chars, Resume: {len(processed_resume_text)} chars")
+        
+        # Get AI analysis
+        analysis_result = await get_ai_response(
+            processed_job_desc, 
+            processed_resume_text
+        )
+        
+        return {
+            "analysis_id": str(uuid.uuid4()),
+            "analysis": analysis_result,
+            "original_resume": processed_resume_text,
+            "job_description": processed_job_desc,
+            "created_at": datetime.utcnow(),
+            "source_info": {
+                "job_source": "url" if is_url_only(job_description) else "text",
+                "resume_source": "file" if resume_file else "text",
+                "file_type": resume_file.filename.split('.')[-1] if resume_file else None
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/generate-cover-letter")
+async def generate_cover_letter(
+    job_description: str = Form(...),
+    resume_text: Optional[str] = Form(None),
+    resume_file: Optional[UploadFile] = File(None)
+):
+    """Generate a cover letter based on resume and job description - supports file upload and URL scraping"""
+    try:
+        # Process job description (detect URL vs text)
+        processed_job_desc = job_description
+        if is_url_only(job_description):
+            processed_job_desc = scrape_job_description(job_description)
+        
+        # Process resume (file vs text)
+        processed_resume_text = ""
+        
+        if resume_file:
+            # Validate file type
+            if not resume_file.filename:
+                raise HTTPException(status_code=400, detail="No filename provided")
+            
+            file_ext = resume_file.filename.lower().split('.')[-1]
+            if file_ext not in ['pdf', 'docx']:
+                raise HTTPException(status_code=400, detail="Only PDF and DOCX files are supported")
+            
+            # Read file content
+            file_content = await resume_file.read()
+            
+            # Extract text based on file type
+            if file_ext == 'pdf':
+                processed_resume_text = extract_text_from_pdf(file_content)
+            elif file_ext == 'docx':
+                processed_resume_text = extract_text_from_docx(file_content)
+                
+        elif resume_text:
+            processed_resume_text = resume_text.strip()
+        else:
+            raise HTTPException(status_code=400, detail="Either resume_text or resume_file must be provided")
+        
+        # Validate we have content
+        if not processed_job_desc.strip() or not processed_resume_text.strip():
+            raise HTTPException(status_code=400, detail="Both job description and resume content are required")
+        
+        result = await get_cover_letter_response(
+            processed_job_desc,
+            processed_resume_text
+        )
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
