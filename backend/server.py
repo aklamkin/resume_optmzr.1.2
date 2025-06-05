@@ -365,6 +365,30 @@ async def root():
         }
     }
 
+@app.get("/api/test-ai")
+async def test_ai():
+    """Test AI integration"""
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        api_key = os.environ.get('GEMINI_API_KEY')
+        if not api_key:
+            return {"error": "API key not found"}
+        
+        chat = LlmChat(
+            api_key=api_key,
+            session_id="test_session",
+            system_message="You are a helpful assistant. Respond with JSON: {\"test\": \"working\"}"
+        ).with_model("gemini", "gemini-2.0-flash")
+        
+        user_message = UserMessage(text="Test message")
+        response = await chat.send_message(user_message)
+        
+        return {"success": True, "response": str(response)}
+        
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "version": "1.0.0"}
