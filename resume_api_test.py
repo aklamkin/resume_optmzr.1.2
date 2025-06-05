@@ -182,47 +182,56 @@ def create_sample_pdf():
 def test_analyze_endpoint_with_file():
     print("Testing /api/analyze endpoint with file upload...")
     
-    # Create a PDF in memory
-    pdf_buffer = create_sample_pdf()
-    if not pdf_buffer:
+    # Create a PDF file
+    pdf_path = create_sample_pdf()
+    if not pdf_path:
         print("❌ Failed to create sample PDF. Skipping file upload test.")
         return False
     
     try:
-        files = {
-            'resume_file': ('sample_resume.pdf', pdf_buffer, 'application/pdf')
-        }
-        
-        data = {
-            'job_description': SAMPLE_JOB_DESCRIPTION
-        }
-        
-        response = requests.post(
-            f"{BASE_URL}/api/analyze",
-            files=files,
-            data=data
-        )
-        
-        print(f"Status Code: {response.status_code}")
-        
-        if response.status_code == 200:
-            result = response.json()
-            print(f"Analysis ID: {result.get('analysis_id')}")
-            print(f"Source Info: {result.get('source_info')}")
-            print("Analysis result sample (truncated):")
-            analysis_str = result.get('analysis', '')
-            print(analysis_str[:500] + "..." if len(analysis_str) > 500 else analysis_str)
+        with open(pdf_path, 'rb') as pdf_file:
+            files = {
+                'resume_file': (pdf_path, pdf_file, 'application/pdf')
+            }
             
-            print("✅ Analyze endpoint with file upload test passed!")
-            return True
-        else:
-            print(f"❌ Analyze endpoint with file upload test failed with status code: {response.status_code}")
-            if hasattr(response, 'text'):
-                print(f"Error response: {response.text}")
-            return False
+            data = {
+                'job_description': SAMPLE_JOB_DESCRIPTION
+            }
+            
+            response = requests.post(
+                f"{BASE_URL}/api/analyze",
+                files=files,
+                data=data
+            )
+            
+            print(f"Status Code: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                print(f"Analysis ID: {result.get('analysis_id')}")
+                print(f"Source Info: {result.get('source_info')}")
+                print("Analysis result sample (truncated):")
+                analysis_str = result.get('analysis', '')
+                print(analysis_str[:500] + "..." if len(analysis_str) > 500 else analysis_str)
+                
+                print("✅ Analyze endpoint with file upload test passed!")
+                return True
+            else:
+                print(f"❌ Analyze endpoint with file upload test failed with status code: {response.status_code}")
+                if hasattr(response, 'text'):
+                    print(f"Error response: {response.text}")
+                return False
     except Exception as e:
         print(f"❌ Error testing analyze endpoint with file: {str(e)}")
         return False
+    finally:
+        # Clean up the temporary file
+        try:
+            if os.path.exists(pdf_path):
+                os.remove(pdf_path)
+                print(f"Removed temporary file: {pdf_path}")
+        except Exception as e:
+            print(f"Warning: Could not remove temporary file: {str(e)}")
 
 def test_cover_letter_generation():
     print("Testing /api/generate-cover-letter endpoint...")
