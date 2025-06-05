@@ -1433,12 +1433,46 @@ function App() {
                 </div>
               </div>
               <div className="flex space-x-3">
-                <button
-                  onClick={downloadCoverLetter}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 text-sm"
-                >
-                  Download {selectedVersion === 'short' ? 'Short' : 'Long'}
-                </button>
+                {/* Cover Letter Download Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowCoverLetterDropdown(!showCoverLetterDropdown)}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 text-sm flex items-center space-x-2"
+                  >
+                    <span>Download {selectedVersion === 'short' ? 'Short' : 'Long'}</span>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  
+                  {showCoverLetterDropdown && (
+                    <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[140px]">
+                      <div className="py-2">
+                        <button
+                          onClick={() => { downloadCoverLetter('txt'); setShowCoverLetterDropdown(false); }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                        >
+                          <span>📄</span>
+                          <span>TXT</span>
+                        </button>
+                        <button
+                          onClick={() => { downloadCoverLetter('docx'); setShowCoverLetterDropdown(false); }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                        >
+                          <span>📘</span>
+                          <span>DOCX</span>
+                        </button>
+                        <button
+                          onClick={() => { downloadCoverLetter('pdf'); setShowCoverLetterDropdown(false); }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                        >
+                          <span>📕</span>
+                          <span>PDF</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => setShowCoverLetter(false)}
                   className="bg-gray-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-700 text-sm"
