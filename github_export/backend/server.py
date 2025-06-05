@@ -338,23 +338,80 @@ async def health_check():
     return {"status": "healthy", "version": "1.0.0"}
 
 @app.post("/analyze")
-async def analyze_resume(request: ResumeAnalysisRequest):
-    """Analyze resume against job description using AI"""
+async def analyze_resume(
+    job_description: str = Form(...),
+    resume_text: Optional[str] = Form(None),
+    resume_file: Optional[UploadFile] = File(None)
+):
+    """Analyze resume against job description using AI - supports file upload and URL scraping"""
     try:
+        # Process job description (detect URL vs text)
+        processed_job_desc = job_description
+        if is_url_only(job_description):
+            print(f"🌐 Detected URL, scraping job description from: {job_description}")
+            processed_job_desc = scrape_job_description(job_description)
+        
+        # Process resume (file vs text)
+        processed_resume_text = ""
+        
+        if resume_file:
+            print(f"📁 Processing uploaded file: {resume_file.filename}")
+            
+            # Validate file type
+            if not resume_file.filename:
+                raise HTTPException(status_code=400, detail="No filename provided")
+            
+            file_ext = resume_file.filename.lower().split('.')[-1]
+            if file_ext not in ['pdf', 'docx']:
+                raise HTTPException(status_code=400, detail="Only PDF and DOCX files are supported")
+            
+            # Read file content
+            file_content = await resume_file.read()
+            
+            # Extract text based on file type
+            if file_ext == 'pdf':
+                processed_resume_text = extract_text_from_pdf(file_content)
+            elif file_ext == 'docx':
+                processed_resume_text = extract_text_from_docx(file_content)
+            
+            if not processed_resume_text.strip():
+                raise HTTPException(status_code=400, detail="No text could be extracted from the uploaded file")
+                
+        elif resume_text:
+            processed_resume_text = resume_text.strip()
+        else:
+            raise HTTPException(status_code=400, detail="Either resume_text or resume_file must be provided")
+        
+        # Validate we have both job description and resume
+        if not processed_job_desc.strip():
+            raise HTTPException(status_code=400, detail="Job description is required")
+        
+        if not processed_resume_text.strip():
+            raise HTTPException(status_code=400, detail="Resume content is required")
+        
+        print(f"✅ Processing analysis - Job desc: {len(processed_job_desc)} chars, Resume: {len(processed_resume_text)} chars")
+        
         # Get AI analysis
         analysis_result = await get_ai_response(
-            request.job_description, 
-            request.resume_text
+            processed_job_desc, 
+            processed_resume_text
         )
         
         return {
             "analysis_id": str(uuid.uuid4()),
             "analysis": analysis_result,
-            "original_resume": request.resume_text,
-            "job_description": request.job_description,
-            "created_at": datetime.utcnow()
+            "original_resume": processed_resume_text,
+            "job_description": processed_job_desc,
+            "created_at": datetime.utcnow(),
+            "source_info": {
+                "job_source": "url" if is_url_only(job_description) else "text",
+                "resume_source": "file" if resume_file else "text",
+                "file_type": resume_file.filename.split('.')[-1] if resume_file else None
+            }
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
