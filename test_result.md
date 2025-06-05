@@ -273,12 +273,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Full application testing"
-    - "File upload functionality"
-    - "AI analysis with real job descriptions"
-    - "Cover letter generation"
+    - "Apply/Remove suggestions functionality"
+    - "Add skill/keyword to resume functionality"
+    - "Backend API testing after dependency fixes"
   stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "high_first"
 
   - task: "API routing and URL handling"
