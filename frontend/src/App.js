@@ -225,19 +225,40 @@ function App() {
     const newApplied = new Set(appliedSuggestions);
     
     if (appliedSuggestions.has(index)) {
-      // Remove suggestion
+      // Remove suggestion - revert back to original
       newApplied.delete(index);
       if (suggestion.current_text) {
-        setOptimizedResume(prev => prev.replace(suggestion.suggested_text, suggestion.current_text));
+        setOptimizedResume(prev => {
+          const updated = prev.replace(suggestion.suggested_text, suggestion.current_text);
+          console.log('Removing suggestion:', suggestion.suggested_text, '→', suggestion.current_text);
+          return updated;
+        });
       }
     } else {
       // Apply suggestion
       newApplied.add(index);
+      const currentResume = optimizedResume || analysisResult?.original_resume || resumeText;
+      
       if (suggestion.current_text) {
-        setOptimizedResume(prev => prev.replace(suggestion.current_text, suggestion.suggested_text));
+        // Replace existing text
+        setOptimizedResume(prev => {
+          const updated = prev.replace(suggestion.current_text, suggestion.suggested_text);
+          console.log('Applying suggestion - replacing:', suggestion.current_text, '→', suggestion.suggested_text);
+          
+          // If replacement didn't work (text not found), try a different approach
+          if (updated === prev) {
+            console.log('Direct replacement failed, appending suggestion');
+            return `${prev}\n\n[ADDED] ${suggestion.suggested_text}`;
+          }
+          return updated;
+        });
       } else {
         // Add new content
-        setOptimizedResume(prev => `${prev}\n\n${suggestion.suggested_text}`);
+        setOptimizedResume(prev => {
+          const updated = `${prev}\n\n${suggestion.suggested_text}`;
+          console.log('Adding new content:', suggestion.suggested_text);
+          return updated;
+        });
       }
     }
     
