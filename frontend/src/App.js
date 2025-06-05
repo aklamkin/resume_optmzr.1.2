@@ -894,7 +894,10 @@ function App() {
                     </button>
                     
                     {showDownloadDropdown && (
-                      <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-xl shadow-lg z-50 min-w-[160px]">
+                      <div 
+                        className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-xl shadow-lg z-50 min-w-[160px]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <div className="py-2">
                           <button
                             onClick={() => { downloadResume('txt'); setShowDownloadDropdown(false); }}
