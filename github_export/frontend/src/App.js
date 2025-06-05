@@ -153,25 +153,31 @@ function App() {
 
   // Generate cover letter
   const generateCoverLetter = async () => {
-    if (!jobDescription.trim() || !resumeText.trim()) {
-      alert('Resume and job description are required to generate a cover letter');
+    if (!jobDescription.trim() || (!resumeText.trim() && !resumeFile)) {
+      alert('Job description and resume are required to generate a cover letter');
       return;
     }
 
     setIsGeneratingCoverLetter(true);
     try {
+      const formData = new FormData();
+      formData.append('job_description', jobDescription);
+      
+      if (resumeFile) {
+        formData.append('resume_file', resumeFile);
+      } else {
+        formData.append('resume_text', optimizedResume || resumeText);
+      }
+
       const response = await fetch(`${API_BASE_URL}/generate-cover-letter`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          job_description: jobDescription,
-          resume_text: optimizedResume || resumeText, // Use optimized version if available
-        }),
+        body: formData,
       });
 
-      if (!response.ok) throw new Error('Cover letter generation failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Cover letter generation failed');
+      }
 
       const result = await response.json();
       setCoverLetterShort(result.short_version || '');
@@ -179,7 +185,7 @@ function App() {
       setShowCoverLetter(true);
     } catch (error) {
       console.error('Error generating cover letter:', error);
-      alert('Cover letter generation failed. Please try again.');
+      alert(`Cover letter generation failed: ${error.message}`);
     } finally {
       setIsGeneratingCoverLetter(false);
     }
