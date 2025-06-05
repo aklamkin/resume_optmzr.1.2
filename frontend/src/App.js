@@ -326,8 +326,7 @@ function App() {
     }
   };
 
-  // Analyze resume with enhanced error handling
-  const analyzeResume = async () => {
+
 
   // Perform analysis with retry logic
   const performAnalysis = async (maxWaitSeconds = 30, maxRetries = 3) => {
