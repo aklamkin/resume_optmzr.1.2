@@ -663,34 +663,73 @@ function App() {
     }, 100);
   };
 
-  // Add keyword to resume
+  // Add keyword to resume - IMPROVED VERSION
   const addKeywordToResume = (keyword) => {
-    const currentResume = optimizedResume || analysisResult?.original_resume || resumeText;
+    console.log('🔑 Adding keyword:', keyword);
     
-    // Look for a skills section first, then summary
-    const skillsRegex = /(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills)([\s\S]*?)(?=\n[A-Z][A-Z\s]*\n|\n\n[A-Z]|$)/i;
-    const summaryRegex = /(SUMMARY|Summary|PROFILE|Profile|OBJECTIVE|Objective)([\s\S]*?)(?=\n[A-Z][A-Z\s]*\n|\n\n[A-Z]|$)/i;
+    const currentResume = optimizedResume || analysisResult?.original_resume || resumeText || '';
+    console.log('📝 Current resume available:', !!currentResume, 'Length:', currentResume.length);
+    
+    if (!currentResume) {
+      console.error('❌ No resume content found');
+      alert('No resume content found to modify. Please ensure your resume is loaded.');
+      return;
+    }
+    
+    // Check if keyword already exists
+    if (currentResume.toLowerCase().includes(keyword.toLowerCase())) {
+      console.log('ℹ️ Keyword already exists in resume');
+      alert(`"${keyword}" is already mentioned in your resume.`);
+      return;
+    }
+    
+    // Look for skills section first, then summary
+    const skillsRegex = /(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills|CORE COMPETENCIES|Core Competencies|KEY SKILLS|Key Skills)([\s\S]*?)(?=\n[A-Z][A-Z\s]*\n|\n\n[A-Z]|$)/i;
+    const summaryRegex = /(SUMMARY|Summary|PROFILE|Profile|OBJECTIVE|Objective|PROFESSIONAL SUMMARY|Professional Summary)([\s\S]*?)(?=\n[A-Z][A-Z\s]*\n|\n\n[A-Z]|$)/i;
     
     let updatedResume = currentResume;
+    let keywordAdded = false;
     
-    if (skillsRegex.test(currentResume)) {
-      // Add to skills section
-      const match = currentResume.match(skillsRegex);
-      const skillsSection = match[0];
+    // Try to add to skills section first
+    const skillsMatch = currentResume.match(skillsRegex);
+    if (skillsMatch) {
+      console.log('✅ Adding to skills section');
+      const skillsSection = skillsMatch[0];
       const updatedSkillsSection = skillsSection + (skillsSection.endsWith('\n') ? '' : '\n') + `• ${keyword}`;
       updatedResume = currentResume.replace(skillsRegex, updatedSkillsSection);
-    } else if (summaryRegex.test(currentResume)) {
-      // Add to summary section
-      const match = currentResume.match(summaryRegex);
-      const summarySection = match[0];
-      const updatedSummarySection = summarySection.replace(/\.$/, '') + `, ${keyword}.`;
-      updatedResume = currentResume.replace(summaryRegex, updatedSummarySection);
+      keywordAdded = true;
     } else {
-      // Add as new skills section
-      updatedResume = currentResume + `\n\nSKILLS\n• ${keyword}`;
+      // Try to add to summary section
+      const summaryMatch = currentResume.match(summaryRegex);
+      if (summaryMatch) {
+        console.log('✅ Adding to summary section');
+        const summarySection = summaryMatch[0];
+        let updatedSummarySection;
+        
+        // Smart insertion into summary
+        if (summarySection.endsWith('.')) {
+          updatedSummarySection = summarySection.slice(0, -1) + ` with expertise in ${keyword}.`;
+        } else {
+          updatedSummarySection = summarySection + ` Experienced in ${keyword}.`;
+        }
+        
+        updatedResume = currentResume.replace(summaryRegex, updatedSummarySection);
+        keywordAdded = true;
+      }
+    }
+    
+    // If no suitable section found, create a new skills section
+    if (!keywordAdded) {
+      console.log('📝 Creating new skills section for keyword');
+      updatedResume = currentResume + `\n\n[ADDED SKILLS]\n• ${keyword}`;
     }
     
     setOptimizedResume(updatedResume);
+    console.log('✅ Keyword added successfully. New resume length:', updatedResume.length);
+    
+    // Visual feedback
+    const successMessage = `✅ "${keyword}" has been added to your resume!`;
+    console.log(successMessage);
   };
 
   // Remove skill/keyword from resume
