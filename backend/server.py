@@ -678,11 +678,27 @@ async def generate_cover_letter(
         if not processed_job_desc.strip() or not processed_resume_text.strip():
             raise HTTPException(status_code=400, detail="Both job description and resume content are required")
         
-        result = await get_cover_letter_response(
+        # Generate cover letter with retry capability
+        result = await get_cover_letter_response_with_retry(
             processed_job_desc,
             processed_resume_text
         )
-        return result
+        
+        # Check if cover letter generation was successful
+        if not result.success:
+            # Return detailed error information for frontend to handle
+            raise HTTPException(
+                status_code=503,  # Service Unavailable
+                detail={
+                    "error_type": result.error.error_type,
+                    "message": result.error.message,
+                    "retryable": result.error.retryable,
+                    "retry_after_seconds": result.error.retry_after_seconds,
+                    "details": result.error.details
+                }
+            )
+        
+        return result.data
         
     except HTTPException:
         raise
