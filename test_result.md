@@ -275,7 +275,6 @@ test_plan:
   current_focus:
     - "Apply/Remove suggestions functionality"
     - "Add skill/keyword to resume functionality"
-    - "Backend API testing after dependency fixes"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
