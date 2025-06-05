@@ -6,6 +6,7 @@ const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 function App() {
   const [jobDescription, setJobDescription] = useState('');
   const [resumeText, setResumeText] = useState('');
+  const [resumeFile, setResumeFile] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [appliedSuggestions, setAppliedSuggestions] = useState(new Set());
@@ -87,32 +88,40 @@ function App() {
 
   // Analyze resume
   const analyzeResume = async () => {
-    if (!jobDescription.trim() || !resumeText.trim()) {
-      alert('Please fill in both job description and resume text');
+    if (!jobDescription.trim() || (!resumeText.trim() && !resumeFile)) {
+      alert('Please provide both job description and resume (either text or file)');
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/analyze`, {
+      const formData = new FormData();
+      formData.append('job_description', jobDescription);
+      
+      if (resumeFile) {
+        formData.append('resume_file', resumeFile);
+      } else {
+        formData.append('resume_text', resumeText);
+      }
+
+      const response = await fetch(`${API_BASE_URL}/analyze`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          job_description: jobDescription,
-          resume_text: resumeText,
-        }),
+        body: formData, // Don't set Content-Type header, let browser set it for FormData
       });
 
-      if (!response.ok) throw new Error('Analysis failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Analysis failed');
+      }
 
       const result = await response.json();
       setAnalysisResult(result);
-      setOptimizedResume(resumeText); // Start with original resume
+      
+      // Set optimized resume from the extracted text
+      setOptimizedResume(result.original_resume || resumeText);
     } catch (error) {
       console.error('Error analyzing resume:', error);
-      alert('Analysis failed. Please try again.');
+      alert(`Analysis failed: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -144,25 +153,31 @@ function App() {
 
   // Generate cover letter
   const generateCoverLetter = async () => {
-    if (!jobDescription.trim() || !resumeText.trim()) {
-      alert('Resume and job description are required to generate a cover letter');
+    if (!jobDescription.trim() || (!resumeText.trim() && !resumeFile)) {
+      alert('Job description and resume are required to generate a cover letter');
       return;
     }
 
     setIsGeneratingCoverLetter(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/generate-cover-letter`, {
+      const formData = new FormData();
+      formData.append('job_description', jobDescription);
+      
+      if (resumeFile) {
+        formData.append('resume_file', resumeFile);
+      } else {
+        formData.append('resume_text', optimizedResume || resumeText);
+      }
+
+      const response = await fetch(`${API_BASE_URL}/generate-cover-letter`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          job_description: jobDescription,
-          resume_text: optimizedResume || resumeText, // Use optimized version if available
-        }),
+        body: formData,
       });
 
-      if (!response.ok) throw new Error('Cover letter generation failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Cover letter generation failed');
+      }
 
       const result = await response.json();
       setCoverLetterShort(result.short_version || '');
@@ -170,7 +185,7 @@ function App() {
       setShowCoverLetter(true);
     } catch (error) {
       console.error('Error generating cover letter:', error);
-      alert('Cover letter generation failed. Please try again.');
+      alert(`Cover letter generation failed: ${error.message}`);
     } finally {
       setIsGeneratingCoverLetter(false);
     }
@@ -202,6 +217,7 @@ function App() {
   const resetForm = () => {
     setJobDescription('');
     setResumeText('');
+    setResumeFile(null);
     setAnalysisResult(null);
     setAppliedSuggestions(new Set());
     setOptimizedResume('');
@@ -212,6 +228,37 @@ function App() {
     setShowCoverLetter(false);
     setShowRatingPopup(false);
     setSelectedRating(null);
+  };
+
+  // Handle file selection
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      const fileExt = file.name.toLowerCase().split('.').pop();
+      if (!['pdf', 'docx'].includes(fileExt)) {
+        alert('Please select a PDF or DOCX file');
+        event.target.value = '';
+        return;
+      }
+      
+      setResumeFile(file);
+      setResumeText(''); // Clear text when file is selected
+    }
+  };
+
+  // Handle resume text change
+  const handleResumeTextChange = (text) => {
+    setResumeText(text);
+    if (text.trim()) {
+      setResumeFile(null); // Clear file when text is entered
+    }
+  };
+
+  // Check if input is likely a URL
+  const isLikelyURL = (text) => {
+    const trimmed = text.trim();
+    return trimmed.startsWith('http') && !trimmed.includes('\n') && trimmed.split(' ').length === 1;
   };
 
   // Check if keyword exists in resume
@@ -312,41 +359,111 @@ function App() {
                 <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center">Optimize Your Resume</h2>
                 
                 <div className="grid md:grid-cols-2 gap-6 h-96">
+                  {/* Job Description Input */}
                   <div className="flex flex-col">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Job Description *
+                      <span className="text-blue-600 text-xs block mt-1">
+                        💡 Paste job description OR job posting URL
+                      </span>
                     </label>
-                    <textarea
-                      value={jobDescription}
-                      onChange={(e) => setJobDescription(e.target.value)}
-                      placeholder="Paste the job description here..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                      required
-                    />
+                    <div className="flex-1 relative">
+                      <textarea
+                        value={jobDescription}
+                        onChange={(e) => setJobDescription(e.target.value)}
+                        placeholder="Paste job description text or job posting URL here..."
+                        className={`flex-1 w-full h-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:border-blue-500 resize-none ${
+                          isLikelyURL(jobDescription) 
+                            ? 'border-blue-300 bg-blue-50' 
+                            : 'border-gray-300'
+                        }`}
+                        required
+                      />
+                      {isLikelyURL(jobDescription) && (
+                        <div className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                          🌐 URL detected
+                        </div>
+                      )}
+                    </div>
                   </div>
 
+                  {/* Resume Input */}
                   <div className="flex flex-col">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Your Resume *
+                      <span className="text-green-600 text-xs block mt-1">
+                        📄 Upload PDF/DOCX OR paste text
+                      </span>
                     </label>
-                    <textarea
-                      value={resumeText}
-                      onChange={(e) => setResumeText(e.target.value)}
-                      placeholder="Paste your current resume text here..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                      required
-                    />
+                    
+                    {/* File Upload Area */}
+                    <div className="mb-3">
+                      <input
+                        type="file"
+                        accept=".pdf,.docx"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        id="resume-file-input"
+                      />
+                      <label
+                        htmlFor="resume-file-input"
+                        className={`block w-full p-3 border-2 border-dashed rounded-md cursor-pointer transition-colors ${
+                          resumeFile 
+                            ? 'border-green-300 bg-green-50' 
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        {resumeFile ? (
+                          <div className="text-center">
+                            <span className="text-green-700 font-medium">
+                              ✓ {resumeFile.name}
+                            </span>
+                            <div className="text-xs text-green-600 mt-1">
+                              Click to change file
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center text-gray-500">
+                            <div>📁 Click to upload PDF or DOCX</div>
+                            <div className="text-xs mt-1">Or paste text below</div>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+
+                    {/* Text Input Area */}
+                    <div className="flex-1">
+                      <textarea
+                        value={resumeText}
+                        onChange={(e) => handleResumeTextChange(e.target.value)}
+                        placeholder={resumeFile ? "File selected above - or paste text here to use text instead" : "Paste your resume text here..."}
+                        className={`w-full h-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:border-green-500 resize-none ${
+                          resumeFile ? 'border-gray-200 bg-gray-50' : 'border-gray-300'
+                        }`}
+                        disabled={!!resumeFile}
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <div className="mt-6 text-center">
                   <button
                     onClick={analyzeResume}
-                    disabled={isLoading || !jobDescription.trim() || !resumeText.trim()}
+                    disabled={isLoading || !jobDescription.trim() || (!resumeText.trim() && !resumeFile)}
                     className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? 'Analyzing...' : 'Analyze Resume'}
                   </button>
+                  
+                  {/* Status indicator */}
+                  <div className="mt-3 text-sm text-gray-600">
+                    {isLikelyURL(jobDescription) && (
+                      <div className="text-blue-600">🌐 Will scrape job description from URL</div>
+                    )}
+                    {resumeFile && (
+                      <div className="text-green-600">📄 Will extract text from {resumeFile.name}</div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -452,10 +569,16 @@ function App() {
               >
                 <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex-shrink-0">
                   <h3 className="font-semibold text-gray-900">Original Resume</h3>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {analysisResult?.source_info?.resume_source === 'file' 
+                      ? `📄 From ${analysisResult.source_info.file_type?.toUpperCase()} file`
+                      : '📝 From text input'
+                    }
+                  </div>
                 </div>
                 <div className="flex-1 p-4 overflow-auto">
                   <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
-                    {resumeText}
+                    {analysisResult?.original_resume || resumeText}
                   </pre>
                 </div>
               </div>
@@ -475,6 +598,12 @@ function App() {
                   <h3 className="font-semibold text-gray-900">
                     AI Suggestions ({getSuggestions().length})
                   </h3>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {analysisResult?.source_info?.job_source === 'url' 
+                      ? '🌐 Job description scraped from URL'
+                      : '📝 Job description from text input'
+                    }
+                  </div>
                 </div>
                 <div className="flex-1 p-4 overflow-auto">
                   <div className="space-y-3">
@@ -534,6 +663,12 @@ function App() {
               >
                 <div className="bg-green-50 px-4 py-3 border-b border-gray-200 flex-shrink-0">
                   <h3 className="font-semibold text-gray-900">Optimized Resume</h3>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {appliedSuggestions.size > 0 
+                      ? `✨ ${appliedSuggestions.size} suggestions applied`
+                      : '💡 Apply suggestions to see changes'
+                    }
+                  </div>
                 </div>
                 <div className="flex-1 p-4 overflow-auto">
                   <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
