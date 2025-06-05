@@ -217,6 +217,7 @@ function App() {
   const resetForm = () => {
     setJobDescription('');
     setResumeText('');
+    setResumeFile(null);
     setAnalysisResult(null);
     setAppliedSuggestions(new Set());
     setOptimizedResume('');
@@ -227,6 +228,37 @@ function App() {
     setShowCoverLetter(false);
     setShowRatingPopup(false);
     setSelectedRating(null);
+  };
+
+  // Handle file selection
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      const fileExt = file.name.toLowerCase().split('.').pop();
+      if (!['pdf', 'docx'].includes(fileExt)) {
+        alert('Please select a PDF or DOCX file');
+        event.target.value = '';
+        return;
+      }
+      
+      setResumeFile(file);
+      setResumeText(''); // Clear text when file is selected
+    }
+  };
+
+  // Handle resume text change
+  const handleResumeTextChange = (text) => {
+    setResumeText(text);
+    if (text.trim()) {
+      setResumeFile(null); // Clear file when text is entered
+    }
+  };
+
+  // Check if input is likely a URL
+  const isLikelyURL = (text) => {
+    const trimmed = text.trim();
+    return trimmed.startsWith('http') && !trimmed.includes('\n') && trimmed.split(' ').length === 1;
   };
 
   // Check if keyword exists in resume
