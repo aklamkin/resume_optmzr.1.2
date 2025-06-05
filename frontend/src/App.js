@@ -943,19 +943,40 @@ function App() {
                 className="flex flex-col"
                 style={{ width: `${panelWidths[2]}%` }}
               >
-                <div className="bg-green-50 px-4 py-3 border-b border-gray-200 flex-shrink-0">
-                  <h3 className="font-semibold text-gray-900">Optimized Resume</h3>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {appliedSuggestions.size > 0 
-                      ? `✨ ${appliedSuggestions.size} suggestions applied`
-                      : '💡 Apply suggestions to see changes'
-                    }
+                <div className="bg-green-50 px-4 py-3 border-b border-gray-200 flex-shrink-0 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Optimized Resume</h3>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {appliedSuggestions.size > 0 
+                        ? `✨ ${appliedSuggestions.size} suggestions applied`
+                        : '💡 Apply suggestions to see changes'
+                      }
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setIsEditingResume(!isEditingResume)}
+                    className={`text-xs px-3 py-1 rounded-lg font-medium transition-all duration-200 ${
+                      isEditingResume 
+                        ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {isEditingResume ? '📖 View' : '✏️ Edit'}
+                  </button>
                 </div>
                 <div className="flex-1 p-4 overflow-auto">
-                  <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
-                    {optimizedResume}
-                  </pre>
+                  {isEditingResume ? (
+                    <textarea
+                      value={optimizedResume}
+                      onChange={(e) => handleOptimizedResumeChange(e.target.value)}
+                      className="w-full h-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none font-mono text-sm"
+                      placeholder="Your optimized resume will appear here..."
+                    />
+                  ) : (
+                    <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
+                      {optimizedResume}
+                    </pre>
+                  )}
                 </div>
               </div>
             </div>
