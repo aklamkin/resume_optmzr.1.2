@@ -208,8 +208,10 @@ function App() {
       
       setAnalysisResult(result);
       
-      // Set optimized resume from the extracted text
-      setOptimizedResume(result.original_resume || resumeText);
+      // Set optimized resume from the extracted text - ensure it's properly initialized
+      const initialResume = result.original_resume || resumeText || '';
+      setOptimizedResume(initialResume);
+      console.log('Initialized optimized resume with:', initialResume.substring(0, 100) + '...');
     } catch (error) {
       console.error('Error analyzing resume:', error);
       alert(`Analysis failed: ${error.message}`);
