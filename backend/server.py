@@ -16,6 +16,12 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Debug: Check if API key is loaded
+api_key_check = os.environ.get('GEMINI_API_KEY')
+print(f"🔑 API Key loaded at startup: {bool(api_key_check)}")
+if api_key_check:
+    print(f"🔑 API Key starts with: {api_key_check[:10]}...")
+
 app = FastAPI(
     title="Resume Optimizer API",
     description="AI-powered resume optimization backend",
