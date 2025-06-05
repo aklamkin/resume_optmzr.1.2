@@ -154,7 +154,89 @@ def scrape_job_description(url: str) -> str:
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to scrape job description: {str(e)}. Please copy and paste the job description text directly instead of using the URL.")
 
-# AI Integration using emergentintegrations
+# Enhanced error response models
+class APIError(BaseModel):
+    error_type: str  # "service_unavailable", "timeout", "rate_limit", "authentication", "unknown"
+    message: str
+    retryable: bool
+    retry_after_seconds: Optional[int] = None
+    details: Optional[str] = None
+
+class RetryableResponse(BaseModel):
+    success: bool
+    data: Optional[dict] = None
+    error: Optional[APIError] = None
+
+# AI Integration using emergentintegrations with enhanced error handling
+async def get_ai_response_with_retry(job_description: str, resume_text: str, max_retries: int = 3, retry_delay: int = 5):
+    """
+    Get AI response with built-in retry logic for handling service overloads
+    """
+    for attempt in range(max_retries + 1):
+        try:
+            print(f"🤖 AI Analysis Attempt {attempt + 1}/{max_retries + 1}")
+            response = await get_ai_response(job_description, resume_text)
+            return RetryableResponse(success=True, data={"analysis": response})
+            
+        except Exception as e:
+            error_str = str(e).lower()
+            
+            # Classify the error type
+            if "overloaded" in error_str or "503" in error_str or "unavailable" in error_str:
+                error_type = "service_unavailable"
+                retryable = True
+                retry_after = retry_delay * (attempt + 1)  # Exponential backoff
+                message = "AI service is currently overloaded. Please try again in a few moments."
+            elif "timeout" in error_str or "timed out" in error_str:
+                error_type = "timeout"
+                retryable = True
+                retry_after = retry_delay
+                message = "Request timed out. The service may be experiencing high load."
+            elif "rate limit" in error_str or "429" in error_str:
+                error_type = "rate_limit"
+                retryable = True
+                retry_after = 60  # Wait longer for rate limits
+                message = "Rate limit exceeded. Please wait a moment before trying again."
+            elif "unauthorized" in error_str or "401" in error_str or "invalid api key" in error_str:
+                error_type = "authentication"
+                retryable = False
+                retry_after = None
+                message = "Authentication failed. Please check API key configuration."
+            else:
+                error_type = "unknown"
+                retryable = attempt < max_retries  # Only retry for unknown errors if we have attempts left
+                retry_after = retry_delay
+                message = f"AI service error: {str(e)}"
+            
+            error_response = APIError(
+                error_type=error_type,
+                message=message,
+                retryable=retryable,
+                retry_after_seconds=retry_after,
+                details=str(e)
+            )
+            
+            # If this is our last attempt or error is not retryable, return the error
+            if attempt >= max_retries or not retryable:
+                print(f"❌ Final attempt failed: {error_response.message}")
+                return RetryableResponse(success=False, error=error_response)
+            
+            # If retryable, wait and try again
+            if retryable and attempt < max_retries:
+                print(f"⏳ Retrying in {retry_after} seconds... (Attempt {attempt + 1}/{max_retries + 1})")
+                await asyncio.sleep(retry_after)
+                continue
+                
+    # Should never reach here, but just in case
+    return RetryableResponse(
+        success=False, 
+        error=APIError(
+            error_type="unknown",
+            message="Maximum retries exceeded",
+            retryable=False
+        )
+    )
+
 async def get_ai_response(job_description: str, resume_text: str):
     try:
         # Import the emergentintegrations library
