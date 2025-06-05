@@ -477,7 +477,22 @@ function App() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          // Try to parse as JSON first
+          errorData = await response.json();
+        } catch (parseError) {
+          // If JSON parsing fails, get text content
+          const textContent = await response.text();
+          console.error('Non-JSON error response:', textContent);
+          
+          // Check if it's an HTML error page
+          if (textContent.includes('<!DOCTYPE') || textContent.includes('<html')) {
+            throw new Error(`Server error (${response.status}): Unable to reach the backend service. Please try again in a moment.`);
+          } else {
+            throw new Error(`Server error (${response.status}): ${textContent}`);
+          }
+        }
         
         // Check if it's a retryable error (503 Service Unavailable)
         if (response.status === 503 && errorData.detail && typeof errorData.detail === 'object' && errorData.detail.retryable) {
@@ -488,7 +503,7 @@ function App() {
           return; // Don't proceed further, wait for user decision
         }
         
-        throw new Error(errorData.detail?.message || errorData.detail || 'Cover letter generation failed');
+        throw new Error(errorData.detail?.message || errorData.detail || `Cover letter generation failed (${response.status})`);
       }
 
       const result = await response.json();
