@@ -601,39 +601,66 @@ function App() {
     setOptimizedResume(newText);
   };
 
-  // Add skill to resume - FIXED VERSION
+  // Add skill to resume - IMPROVED VERSION
   const addSkillToResume = (skill) => {
-    console.log('Adding skill:', skill);
-    console.log('Current optimized resume:', optimizedResume ? optimizedResume.substring(0, 100) + '...' : 'EMPTY');
+    console.log('🎯 Adding skill:', skill);
     
     const currentResume = optimizedResume || analysisResult?.original_resume || resumeText || '';
+    console.log('📝 Current resume available:', !!currentResume, 'Length:', currentResume.length);
     
     if (!currentResume) {
-      console.error('No resume content found');
-      alert('No resume content found to modify');
+      console.error('❌ No resume content found');
+      alert('No resume content found to modify. Please ensure your resume is loaded.');
       return;
     }
     
-    // Look for a skills section to add to
-    const skillsRegex = /(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills|CORE COMPETENCIES|Core Competencies)([\s\S]*?)(?=\n[A-Z][A-Z\s]*\n|\n\n[A-Z]|$)/i;
-    const match = currentResume.match(skillsRegex);
+    // Check if skill already exists
+    if (currentResume.toLowerCase().includes(skill.toLowerCase())) {
+      console.log('ℹ️ Skill already exists in resume');
+      alert(`"${skill}" is already mentioned in your resume.`);
+      return;
+    }
     
-    let updatedResume;
+    // Look for various skills section patterns
+    const skillsPatterns = [
+      /(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills|CORE COMPETENCIES|Core Competencies|KEY SKILLS|Key Skills)([\s\S]*?)(?=\n[A-Z][A-Z\s]*\n|\n\n[A-Z]|$)/i,
+      /(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills|CORE COMPETENCIES|Core Competencies|KEY SKILLS|Key Skills)([\s\S]*?)(?=\n\n|\n[A-Z]{3,}|$)/i
+    ];
     
-    if (match) {
-      // Add to existing skills section
-      const skillsSection = match[0];
-      const updatedSkillsSection = skillsSection + (skillsSection.endsWith('\n') ? '' : '\n') + `• ${skill}`;
-      updatedResume = currentResume.replace(skillsRegex, updatedSkillsSection);
-      console.log('Added to existing skills section');
-    } else {
-      // Add a new skills section at the end
+    let updatedResume = currentResume;
+    let skillAdded = false;
+    
+    // Try to add to existing skills section
+    for (const pattern of skillsPatterns) {
+      const match = currentResume.match(pattern);
+      if (match) {
+        console.log('✅ Found existing skills section');
+        const skillsSection = match[0];
+        const updatedSkillsSection = skillsSection + (skillsSection.endsWith('\n') ? '' : '\n') + `• ${skill}`;
+        updatedResume = currentResume.replace(pattern, updatedSkillsSection);
+        skillAdded = true;
+        console.log('📝 Added to existing skills section');
+        break;
+      }
+    }
+    
+    // If no skills section found, add a new one
+    if (!skillAdded) {
+      console.log('📝 Creating new skills section');
       updatedResume = currentResume + `\n\n[ADDED SKILLS]\n• ${skill}`;
-      console.log('Created new skills section');
     }
     
     setOptimizedResume(updatedResume);
-    console.log('Updated resume length:', updatedResume.length);
+    console.log('✅ Skill added successfully. New resume length:', updatedResume.length);
+    
+    // Visual feedback
+    const successMessage = `✅ "${skill}" has been added to your resume!`;
+    console.log(successMessage);
+    
+    // Optional: Show a brief success indicator (you can remove this alert if you prefer)
+    setTimeout(() => {
+      console.log('Skill addition completed');
+    }, 100);
   };
 
   // Add keyword to resume
