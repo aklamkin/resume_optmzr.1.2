@@ -261,6 +261,12 @@ function App() {
     return trimmed.startsWith('http') && !trimmed.includes('\n') && trimmed.split(' ').length === 1;
   };
 
+  // Check if URL might be problematic
+  const isProblematicURL = (text) => {
+    const trimmed = text.toLowerCase().trim();
+    return trimmed.includes('linkedin.com') || trimmed.includes('indeed.com');
+  };
+
   // Check if keyword exists in resume
   const isKeywordInResume = (keyword) => {
     const resumeToCheck = optimizedResume || resumeText;
