@@ -642,20 +642,26 @@ function App() {
           /* Results View */
           <div className="flex-1 flex flex-col p-6 overflow-hidden">
             {/* Header with actions and ratings */}
-            <div className="bg-white rounded-lg shadow-lg p-4 mb-4 flex-shrink-0">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Analysis Results</h2>
-                <div className="space-x-3">
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 mb-6 flex-shrink-0">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <ResumeOptimizerLogo className="w-8 h-8" />
+                  <h2 className="text-2xl font-bold text-gray-900">Analysis Results</h2>
+                </div>
+                <div className="flex items-center space-x-3">
                   <button
                     onClick={downloadResume}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 text-sm"
+                    className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 text-sm shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
                   >
-                    Download Resume
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Download Resume</span>
                   </button>
                   <button
                     onClick={generateCoverLetter}
                     disabled={isGeneratingCoverLetter}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 text-sm disabled:opacity-50 transition-all duration-200 flex items-center space-x-2"
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-indigo-700 text-sm disabled:opacity-50 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
                   >
                     {isGeneratingCoverLetter ? (
                       <>
@@ -676,28 +682,33 @@ function App() {
                   </button>
                   <button
                     onClick={resetForm}
-                    className="bg-gray-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-700 text-sm"
+                    className="bg-gray-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-700 text-sm shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
                   >
-                    Start Over
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>Start Over</span>
                   </button>
                 </div>
               </div>
 
               {/* Rating Cards */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-6">
                 {/* Skills Gap */}
                 <div 
                   onClick={() => showRatingDetails('skills')}
-                  className="bg-blue-50 border border-blue-200 rounded-lg p-4 cursor-pointer hover:bg-blue-100 transition-colors"
+                  className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-6 cursor-pointer hover:from-blue-100 hover:to-blue-200 transition-all duration-200 hover:scale-105 shadow-lg"
                 >
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-blue-900">Skills Gap</h3>
-                    <span className="text-xs text-blue-600">Click for details</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wide">Skills Gap</h3>
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
                   </div>
-                  <p className="text-2xl font-bold text-blue-700 mt-1">
+                  <p className="text-3xl font-bold text-blue-700 mb-2">
                     {getAnalysisData()?.skillsGap?.length || 0}
                   </p>
-                  <p className="text-xs text-blue-600 mt-1">
+                  <p className="text-sm text-blue-600 font-medium">
                     {getAnalysisData()?.skillsGap?.length === 0 ? 'No gaps found' : 'Missing skills'}
                   </p>
                 </div>
@@ -705,16 +716,18 @@ function App() {
                 {/* ATS Keywords */}
                 <div 
                   onClick={() => showRatingDetails('ats')}
-                  className="bg-green-50 border border-green-200 rounded-lg p-4 cursor-pointer hover:bg-green-100 transition-colors"
+                  className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-2xl p-6 cursor-pointer hover:from-green-100 hover:to-green-200 transition-all duration-200 hover:scale-105 shadow-lg"
                 >
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-green-900">ATS Keywords</h3>
-                    <span className="text-xs text-green-600">Click for details</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-bold text-green-900 uppercase tracking-wide">ATS Keywords</h3>
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
                   </div>
-                  <p className="text-2xl font-bold text-green-700 mt-1">
+                  <p className="text-3xl font-bold text-green-700 mb-2">
                     {getAnalysisData()?.atsKeywords?.length || 0}
                   </p>
-                  <p className="text-xs text-green-600 mt-1">
+                  <p className="text-sm text-green-600 font-medium">
                     Important keywords
                   </p>
                 </div>
@@ -722,19 +735,21 @@ function App() {
                 {/* Overall Score */}
                 <div 
                   onClick={() => showRatingDetails('score')}
-                  className="bg-purple-50 border border-purple-200 rounded-lg p-4 cursor-pointer hover:bg-purple-100 transition-colors"
+                  className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-2xl p-6 cursor-pointer hover:from-purple-100 hover:to-purple-200 transition-all duration-200 hover:scale-105 shadow-lg"
                 >
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-purple-900">Overall Score</h3>
-                    <span className="text-xs text-purple-600">Click for details</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-bold text-purple-900 uppercase tracking-wide">Overall Score</h3>
+                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
                   </div>
-                  <p className="text-2xl font-bold text-purple-700 mt-1">
+                  <p className="text-3xl font-bold text-purple-700 mb-2">
                     {getAnalysisData()?.overallScore?.match(/\d+/) ? 
                       getAnalysisData().overallScore.match(/\d+/)[0] + '/100' : 
                       'N/A'
                     }
                   </p>
-                  <p className="text-xs text-purple-600 mt-1">
+                  <p className="text-sm text-purple-600 font-medium">
                     Resume match
                   </p>
                 </div>
@@ -744,7 +759,7 @@ function App() {
             {/* Resizable Panels */}
             <div 
               ref={containerRef}
-              className="flex-1 flex bg-white rounded-lg shadow-lg overflow-hidden"
+              className="flex-1 flex bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
               style={{ minHeight: '500px' }}
             >
               {/* Original Resume Panel */}
