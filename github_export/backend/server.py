@@ -1,11 +1,16 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import os
 import uuid
 import json
+import re
 from datetime import datetime
+import requests
+from bs4 import BeautifulSoup
+import pdfplumber
+from docx import Document
 
 app = FastAPI(
     title="Resume Optimizer API",
@@ -25,7 +30,105 @@ app.add_middleware(
 # Pydantic models
 class ResumeAnalysisRequest(BaseModel):
     job_description: str
-    resume_text: str
+    resume_text: Optional[str] = None
+
+# Helper functions for file processing
+def extract_text_from_pdf(file_content: bytes) -> str:
+    """Extract text from PDF file"""
+    try:
+        import io
+        pdf_file = io.BytesIO(file_content)
+        
+        text = ""
+        with pdfplumber.open(pdf_file) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+        
+        return text.strip()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to extract text from PDF: {str(e)}")
+
+def extract_text_from_docx(file_content: bytes) -> str:
+    """Extract text from DOCX file"""
+    try:
+        import io
+        docx_file = io.BytesIO(file_content)
+        
+        doc = Document(docx_file)
+        text = ""
+        
+        for paragraph in doc.paragraphs:
+            text += paragraph.text + "\n"
+            
+        return text.strip()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to extract text from DOCX: {str(e)}")
+
+def is_url_only(text: str) -> bool:
+    """Check if text is a single URL"""
+    text = text.strip()
+    # Check if it's a single URL (starts with http/https, no spaces, no newlines)
+    url_pattern = r'^https?://[^\s\n]+$'
+    return bool(re.match(url_pattern, text))
+
+def scrape_job_description(url: str) -> str:
+    """Scrape job description from URL"""
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Remove script and style elements
+        for script in soup(["script", "style"]):
+            script.decompose()
+        
+        # Try to find job description in common elements
+        job_content = ""
+        
+        # Common job posting selectors
+        selectors = [
+            '[class*="job-description"]',
+            '[class*="job-details"]', 
+            '[class*="description"]',
+            '[id*="job-description"]',
+            '[id*="description"]',
+            'main',
+            '.content',
+            '#content'
+        ]
+        
+        for selector in selectors:
+            element = soup.select_one(selector)
+            if element:
+                job_content = element.get_text(strip=True, separator='\n')
+                if len(job_content) > 200:  # If we found substantial content
+                    break
+        
+        # If no specific element found, get all text
+        if not job_content or len(job_content) < 200:
+            job_content = soup.get_text(strip=True, separator='\n')
+        
+        # Clean up the text
+        lines = [line.strip() for line in job_content.split('\n') if line.strip()]
+        cleaned_text = '\n'.join(lines)
+        
+        # Limit to reasonable length (first 5000 characters)
+        if len(cleaned_text) > 5000:
+            cleaned_text = cleaned_text[:5000] + "..."
+            
+        return cleaned_text
+        
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to scrape job description: {str(e)}")
 
 # AI Integration using emergentintegrations
 async def get_ai_response(job_description: str, resume_text: str):
