@@ -151,7 +151,7 @@ function App() {
 
     setIsGeneratingCoverLetter(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/generate-cover-letter`, {
+      const response = await fetch(`${API_BASE_URL}/generate-cover-letter`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
