@@ -3,6 +3,18 @@ import './App.css';
 
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
+// Simple geometric logo component (Nike-style)
+const ResumeOptimizerLogo = ({ className = "w-8 h-8" }) => (
+  <svg className={className} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path 
+      d="M8 12 L16 8 L24 12 L16 16 Z M8 20 L16 16 L24 20 L16 24 Z" 
+      fill="currentColor" 
+      className="text-blue-600"
+    />
+    <circle cx="16" cy="16" r="2" fill="currentColor" className="text-blue-600" />
+  </svg>
+);
+
 function App() {
   const [jobDescription, setJobDescription] = useState('');
   const [resumeText, setResumeText] = useState('');
