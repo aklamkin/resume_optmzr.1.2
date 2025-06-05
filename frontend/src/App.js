@@ -635,7 +635,17 @@ function App() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Cover letter generation failed');
+        
+        // Check if it's a retryable error (503 Service Unavailable)
+        if (response.status === 503 && errorData.detail && typeof errorData.detail === 'object' && errorData.detail.retryable) {
+          // Show retry dialog for service overload errors
+          setRetryError(errorData.detail);
+          setRetryOperation('coverLetter');
+          setShowRetryDialog(true);
+          return; // Don't proceed further, wait for user decision
+        }
+        
+        throw new Error(errorData.detail?.message || errorData.detail || 'Cover letter generation failed');
       }
 
       const result = await response.json();
@@ -646,8 +656,144 @@ function App() {
       console.error('Error generating cover letter:', error);
       alert(`Cover letter generation failed: ${error.message}`);
     } finally {
-      setIsGeneratingCoverLetter(false);
+      if (!showRetryDialog) {
+        setIsGeneratingCoverLetter(false);
+      }
     }
+  };
+
+  // Retry operation functions
+  const executeRetryWithCustomSettings = async () => {
+    setShowRetryDialog(false);
+    
+    const maxRetries = retryMode === 'count' ? customRetryCount : Math.ceil(customRetrySeconds / 10);
+    const retryDelay = retryMode === 'time' ? Math.ceil(customRetrySeconds / maxRetries) : 5;
+    
+    if (retryOperation === 'analyze') {
+      await performAnalysisRetry(maxRetries, retryDelay);
+    } else if (retryOperation === 'coverLetter') {
+      await performCoverLetterRetry(maxRetries, retryDelay);
+    }
+  };
+
+  const performAnalysisRetry = async (maxRetries, retryDelay) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 Analysis retry attempt ${attempt}/${maxRetries}`);
+        
+        const formData = new FormData();
+        formData.append('job_description', jobDescription);
+        
+        if (resumeFile) {
+          formData.append('resume_file', resumeFile);
+        } else {
+          formData.append('resume_text', resumeText);
+        }
+
+        const response = await fetch(`${API_BASE_URL}/analyze`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          updateProgress(4);
+          await new Promise(resolve => setTimeout(resolve, 300));
+          updateProgress(5);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          setAnalysisResult(result);
+          const initialResume = result.original_resume || resumeText || '';
+          setOptimizedResume(initialResume);
+          
+          setIsLoading(false);
+          setProgressSteps([]);
+          setCurrentStep(0);
+          console.log('✅ Analysis completed successfully on retry');
+          return;
+        } else {
+          if (attempt >= maxRetries) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail?.message || 'Analysis failed after retries');
+          }
+          
+          console.log(`⏳ Waiting ${retryDelay} seconds before next attempt...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay * 1000));
+        }
+        
+      } catch (error) {
+        if (attempt >= maxRetries) {
+          alert(`Analysis failed after ${maxRetries} retries: ${error.message}`);
+          setIsLoading(false);
+          setProgressSteps([]);
+          setCurrentStep(0);
+          return;
+        }
+        
+        console.log(`⏳ Error on attempt ${attempt}, waiting ${retryDelay} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay * 1000));
+      }
+    }
+  };
+
+  const performCoverLetterRetry = async (maxRetries, retryDelay) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 Cover letter retry attempt ${attempt}/${maxRetries}`);
+        
+        const formData = new FormData();
+        formData.append('job_description', jobDescription);
+        
+        if (resumeFile) {
+          formData.append('resume_file', resumeFile);
+        } else {
+          formData.append('resume_text', optimizedResume || resumeText);
+        }
+
+        const response = await fetch(`${API_BASE_URL}/generate-cover-letter`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          setCoverLetterShort(result.short_version || '');
+          setCoverLetterLong(result.long_version || '');
+          setShowCoverLetter(true);
+          setIsGeneratingCoverLetter(false);
+          console.log('✅ Cover letter generated successfully on retry');
+          return;
+        } else {
+          if (attempt >= maxRetries) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail?.message || 'Cover letter generation failed after retries');
+          }
+          
+          console.log(`⏳ Waiting ${retryDelay} seconds before next attempt...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay * 1000));
+        }
+        
+      } catch (error) {
+        if (attempt >= maxRetries) {
+          alert(`Cover letter generation failed after ${maxRetries} retries: ${error.message}`);
+          setIsGeneratingCoverLetter(false);
+          return;
+        }
+        
+        console.log(`⏳ Error on attempt ${attempt}, waiting ${retryDelay} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay * 1000));
+      }
+    }
+  };
+
+  const cancelRetryOperation = () => {
+    setShowRetryDialog(false);
+    setRetryError(null);
+    setRetryOperation(null);
+    setIsLoading(false);
+    setIsGeneratingCoverLetter(false);
+    setProgressSteps([]);
+    setCurrentStep(0);
   };
 
   // Download resume with format options
