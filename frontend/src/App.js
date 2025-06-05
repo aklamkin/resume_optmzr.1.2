@@ -881,7 +881,7 @@ function App() {
                   {/* Resume Download Dropdown */}
                   <div className="relative">
                     <button
-                      onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
+                      onClick={(e) => { e.stopPropagation(); setShowDownloadDropdown(!showDownloadDropdown); }}
                       className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 text-sm shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
