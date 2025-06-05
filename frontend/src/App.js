@@ -194,7 +194,7 @@ function App() {
         formData.append('resume_text', resumeText);
       }
 
-      const response = await fetch(`${API_BASE_URL}/analyze`, {
+      const response = await fetch(`${API_BASE_URL}/api/analyze`, {
         method: 'POST',
         body: formData, // Don't set Content-Type header, let browser set it for FormData
       });
