@@ -6,10 +6,12 @@ Welcome to ResumeAI! This directory contains comprehensive documentation for ins
 
 ### **📋 Quick Start**
 - **[README.md](README.md)** - Main project overview, features, and quick start guide
+- **[QUICKSTART.md](QUICKSTART.md)** - 5-minute developer setup guide
 - **[setup.sh](setup.sh)** - Automated installation script (run with `bash setup.sh`)
 
 ### **🛠️ Installation & Deployment**
 - **[INSTALLATION.md](INSTALLATION.md)** - Complete step-by-step installation guide for Linux servers
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Detailed project organization and file explanations
 - **[deploy/](deploy/)** - Docker and cloud deployment configurations
   - `docker-compose.yml` - Docker deployment
   - `Dockerfile.backend` & `Dockerfile.frontend` - Container configurations
