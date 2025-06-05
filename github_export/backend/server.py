@@ -416,15 +416,56 @@ async def analyze_resume(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate-cover-letter")
-async def generate_cover_letter(request: ResumeAnalysisRequest):
-    """Generate a cover letter based on resume and job description"""
+async def generate_cover_letter(
+    job_description: str = Form(...),
+    resume_text: Optional[str] = Form(None),
+    resume_file: Optional[UploadFile] = File(None)
+):
+    """Generate a cover letter based on resume and job description - supports file upload and URL scraping"""
     try:
+        # Process job description (detect URL vs text)
+        processed_job_desc = job_description
+        if is_url_only(job_description):
+            processed_job_desc = scrape_job_description(job_description)
+        
+        # Process resume (file vs text)
+        processed_resume_text = ""
+        
+        if resume_file:
+            # Validate file type
+            if not resume_file.filename:
+                raise HTTPException(status_code=400, detail="No filename provided")
+            
+            file_ext = resume_file.filename.lower().split('.')[-1]
+            if file_ext not in ['pdf', 'docx']:
+                raise HTTPException(status_code=400, detail="Only PDF and DOCX files are supported")
+            
+            # Read file content
+            file_content = await resume_file.read()
+            
+            # Extract text based on file type
+            if file_ext == 'pdf':
+                processed_resume_text = extract_text_from_pdf(file_content)
+            elif file_ext == 'docx':
+                processed_resume_text = extract_text_from_docx(file_content)
+                
+        elif resume_text:
+            processed_resume_text = resume_text.strip()
+        else:
+            raise HTTPException(status_code=400, detail="Either resume_text or resume_file must be provided")
+        
+        # Validate we have content
+        if not processed_job_desc.strip() or not processed_resume_text.strip():
+            raise HTTPException(status_code=400, detail="Both job description and resume content are required")
+        
         result = await get_cover_letter_response(
-            request.job_description,
-            request.resume_text
+            processed_job_desc,
+            processed_resume_text
         )
         return result
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
