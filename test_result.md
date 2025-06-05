@@ -170,6 +170,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Dual cover letter generation (short and long versions) with AI"
+      - working: true
+        agent: "testing"
+        comment: "Verified cover letter generation endpoint is working correctly. Both short and long versions are generated successfully."
 
 frontend:
   - task: "React application with professional UI"
