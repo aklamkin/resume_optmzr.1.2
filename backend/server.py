@@ -148,6 +148,8 @@ async def get_ai_response(job_description: str, resume_text: str):
         # Import the emergentintegrations library
         from emergentintegrations.llm.chat import LlmChat, UserMessage
         
+        print(f"🤖 Starting AI analysis - Job desc: {len(job_description)} chars, Resume: {len(resume_text)} chars")
+        
         system_prompt = """You are an expert resume optimization assistant. Your task is to analyze a resume against a specific job description and provide detailed, actionable suggestions for improvement.
 
 Please analyze both the resume and job description, then provide:
@@ -185,8 +187,10 @@ Format your response as JSON with the following structure:
         # Create AI chat instance
         api_key = os.environ.get('GEMINI_API_KEY')
         if not api_key:
+            print("❌ Gemini API key not found")
             raise HTTPException(status_code=500, detail="Gemini API key not configured")
             
+        print("🔑 API key found, creating chat instance...")
         chat = LlmChat(
             api_key=api_key,
             session_id=f"resume_analysis_{uuid.uuid4()}",
@@ -206,8 +210,10 @@ Format your response as JSON with the following structure:
             """
         )
 
+        print("📤 Sending message to AI...")
         # Get AI response
         response = await chat.send_message(user_message)
+        print("📥 Received AI response")
         
         # Clean up the response - remove markdown code blocks if present
         cleaned_response = str(response)
@@ -220,9 +226,13 @@ Format your response as JSON with the following structure:
             if end_index > start_index:
                 cleaned_response = cleaned_response[start_index:end_index].strip()
         
+        print("✅ AI analysis completed successfully")
         return cleaned_response
         
     except Exception as e:
+        print(f"❌ AI analysis error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")
 
 async def get_cover_letter_response(job_description: str, resume_text: str):
