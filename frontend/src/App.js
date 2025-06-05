@@ -341,6 +341,87 @@ function App() {
     return trimmed.includes('linkedin.com') || trimmed.includes('indeed.com');
   };
 
+  // Handle manual resume editing
+  const handleOptimizedResumeChange = (newText) => {
+    setOptimizedResume(newText);
+  };
+
+  // Add skill to resume
+  const addSkillToResume = (skill) => {
+    const currentResume = optimizedResume || analysisResult?.original_resume || resumeText;
+    
+    // Look for a skills section to add to
+    const skillsRegex = /(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills|CORE COMPETENCIES|Core Competencies)([\s\S]*?)(?=\n[A-Z][A-Z\s]*\n|\n\n[A-Z]|$)/i;
+    const match = currentResume.match(skillsRegex);
+    
+    if (match) {
+      // Add to existing skills section
+      const skillsSection = match[0];
+      const updatedSkillsSection = skillsSection + (skillsSection.endsWith('\n') ? '' : '\n') + `• ${skill}`;
+      const updatedResume = currentResume.replace(skillsRegex, updatedSkillsSection);
+      setOptimizedResume(updatedResume);
+    } else {
+      // Add a new skills section
+      const updatedResume = currentResume + `\n\nSKILLS\n• ${skill}`;
+      setOptimizedResume(updatedResume);
+    }
+  };
+
+  // Add keyword to resume
+  const addKeywordToResume = (keyword) => {
+    const currentResume = optimizedResume || analysisResult?.original_resume || resumeText;
+    
+    // Look for a skills section first, then summary
+    const skillsRegex = /(SKILLS|Skills|TECHNICAL SKILLS|Technical Skills)([\s\S]*?)(?=\n[A-Z][A-Z\s]*\n|\n\n[A-Z]|$)/i;
+    const summaryRegex = /(SUMMARY|Summary|PROFILE|Profile|OBJECTIVE|Objective)([\s\S]*?)(?=\n[A-Z][A-Z\s]*\n|\n\n[A-Z]|$)/i;
+    
+    let updatedResume = currentResume;
+    
+    if (skillsRegex.test(currentResume)) {
+      // Add to skills section
+      const match = currentResume.match(skillsRegex);
+      const skillsSection = match[0];
+      const updatedSkillsSection = skillsSection + (skillsSection.endsWith('\n') ? '' : '\n') + `• ${keyword}`;
+      updatedResume = currentResume.replace(skillsRegex, updatedSkillsSection);
+    } else if (summaryRegex.test(currentResume)) {
+      // Add to summary section
+      const match = currentResume.match(summaryRegex);
+      const summarySection = match[0];
+      const updatedSummarySection = summarySection.replace(/\.$/, '') + `, ${keyword}.`;
+      updatedResume = currentResume.replace(summaryRegex, updatedSummarySection);
+    } else {
+      // Add as new skills section
+      updatedResume = currentResume + `\n\nSKILLS\n• ${keyword}`;
+    }
+    
+    setOptimizedResume(updatedResume);
+  };
+
+  // Remove skill/keyword from resume
+  const removeFromResume = (item) => {
+    const currentResume = optimizedResume || analysisResult?.original_resume || resumeText;
+    
+    // Remove various patterns of the item
+    const patterns = [
+      new RegExp(`•\\s*${item}\\s*\n?`, 'gi'),
+      new RegExp(`-\\s*${item}\\s*\n?`, 'gi'),
+      new RegExp(`\\*\\s*${item}\\s*\n?`, 'gi'),
+      new RegExp(`,\\s*${item}`, 'gi'),
+      new RegExp(`${item}\\s*,`, 'gi'),
+      new RegExp(`\\b${item}\\b`, 'gi')
+    ];
+    
+    let updatedResume = currentResume;
+    for (const pattern of patterns) {
+      updatedResume = updatedResume.replace(pattern, '');
+    }
+    
+    // Clean up any double spaces or empty lines
+    updatedResume = updatedResume.replace(/\n\s*\n\s*\n/g, '\n\n').replace(/  +/g, ' ');
+    
+    setOptimizedResume(updatedResume);
+  };
+
   // Check if keyword exists in resume
   const isKeywordInResume = (keyword) => {
     const resumeToCheck = optimizedResume || resumeText;
