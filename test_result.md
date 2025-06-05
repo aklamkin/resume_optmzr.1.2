@@ -328,3 +328,5 @@ agent_communication:
     message: "Requested: 1. Make optimized resume editable for manual changes, 2. Make skills/keywords actionable with add/remove functionality"
   - agent: "main"
     message: "ENHANCED: Added editable optimized resume panel with view/edit toggle. Made skills and keywords actionable with smart add/remove buttons that directly update resume text. Enhanced rating popups with interactive buttons and better UX. Frontend restarted successfully."
+  - agent: "main"
+    message: "CRITICAL FIX: Fixed Apply/Remove buttons functionality that was not modifying resume text. Completely rewrote toggleSuggestion function with robust text replacement strategies, improved addSkillToResume and addKeywordToResume functions with better error handling and duplicate detection. Added comprehensive logging for debugging. All functions now properly update the optimizedResume state."
