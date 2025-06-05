@@ -563,7 +563,10 @@ function App() {
         });
 
         if (response.ok) {
-          const result = await response.json();
+          const result = await response.json().catch(async () => {
+            const text = await response.text();
+            throw new Error(`Invalid response format: ${text.substring(0, 100)}`);
+          });
           updateProgress(4);
           await new Promise(resolve => setTimeout(resolve, 300));
           updateProgress(5);
