@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ../backend
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ../backend:/app
+    command: uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+    depends_on:
+      - mongodb
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_BACKEND_URL=http://localhost:8001
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    command: yarn start
+
+  mongodb:
+    image: mongo:7-jammy
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=resume_optimizer
+
+volumes:
+  mongodb_data:
