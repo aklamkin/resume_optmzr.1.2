@@ -628,7 +628,12 @@ function App() {
           return;
         } else {
           if (attempt >= maxRetries) {
-            const errorData = await response.json();
+            let errorData;
+            try {
+              errorData = await response.json();
+            } catch {
+              errorData = { detail: { message: `Server error (${response.status})` } };
+            }
             throw new Error(errorData.detail?.message || 'Cover letter generation failed after retries');
           }
           
