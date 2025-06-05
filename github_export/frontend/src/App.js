@@ -233,7 +233,10 @@ function App() {
       updateProgress(4);
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      const result = await response.json();
+      const result = await response.json().catch(async () => {
+        const text = await response.text();
+        throw new Error(`Invalid response format: ${text.substring(0, 100)}`);
+      });
       
       // Step 6: Finalizing
       updateProgress(5);
@@ -247,6 +250,32 @@ function App() {
       console.log('Initialized optimized resume with:', initialResume.substring(0, 100) + '...');
     } catch (error) {
       console.error('Error analyzing resume:', error);
+      
+      // Check if this looks like a network/server error that should trigger retry dialog
+      const errorMessage = error.message.toLowerCase();
+      if (errorMessage.includes('upstream') || 
+          errorMessage.includes('gateway') || 
+          errorMessage.includes('timeout') ||
+          errorMessage.includes('network') ||
+          errorMessage.includes('fetch') ||
+          errorMessage.includes('invalid response format')) {
+        
+        // Create a retryable error for network/server issues
+        const retryableError = {
+          error_type: 'service_unavailable',
+          message: 'Unable to connect to AI service. This may be due to high demand or network issues.',
+          retryable: true,
+          retry_after_seconds: 30,
+          details: error.message
+        };
+        
+        setRetryError(retryableError);
+        setRetryOperation('analyze');
+        setShowRetryDialog(true);
+        return; // Don't proceed further, wait for user decision
+      }
+      
+      // For other errors, show regular alert
       alert(`Analysis failed: ${error.message}`);
     } finally {
       if (!showRetryDialog) {
@@ -286,7 +315,10 @@ function App() {
           updateProgress(4);
           await new Promise(resolve => setTimeout(resolve, 300));
 
-          const result = await response.json();
+          const result = await response.json().catch(async () => {
+            const text = await response.text();
+            throw new Error(`Invalid response format: ${text.substring(0, 100)}`);
+          });
           
           updateProgress(5);
           await new Promise(resolve => setTimeout(resolve, 500));
@@ -506,7 +538,10 @@ function App() {
         throw new Error(errorData.detail?.message || errorData.detail || `Cover letter generation failed (${response.status})`);
       }
 
-      const result = await response.json();
+      const result = await response.json().catch(async () => {
+        const text = await response.text();
+        throw new Error(`Invalid response format: ${text.substring(0, 100)}`);
+      });
       setCoverLetterShort(result.short_version || '');
       setCoverLetterLong(result.long_version || '');
       setShowCoverLetter(true);
@@ -554,7 +589,10 @@ function App() {
         });
 
         if (response.ok) {
-          const result = await response.json();
+          const result = await response.json().catch(async () => {
+            const text = await response.text();
+            throw new Error(`Invalid response format: ${text.substring(0, 100)}`);
+          });
           updateProgress(4);
           await new Promise(resolve => setTimeout(resolve, 300));
           updateProgress(5);
@@ -619,7 +657,10 @@ function App() {
         });
 
         if (response.ok) {
-          const result = await response.json();
+          const result = await response.json().catch(async () => {
+            const text = await response.text();
+            throw new Error(`Invalid response format: ${text.substring(0, 100)}`);
+          });
           setCoverLetterShort(result.short_version || '');
           setCoverLetterLong(result.long_version || '');
           setShowCoverLetter(true);
