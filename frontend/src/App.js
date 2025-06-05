@@ -1454,7 +1454,7 @@ function App() {
                 {/* Cover Letter Download Dropdown */}
                 <div className="relative">
                   <button
-                    onClick={() => setShowCoverLetterDropdown(!showCoverLetterDropdown)}
+                    onClick={(e) => { e.stopPropagation(); setShowCoverLetterDropdown(!showCoverLetterDropdown); }}
                     className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 text-sm flex items-center space-x-2"
                   >
                     <span>Download {selectedVersion === 'short' ? 'Short' : 'Long'}</span>
