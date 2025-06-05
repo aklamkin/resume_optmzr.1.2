@@ -68,7 +68,9 @@ docker-compose -f deploy/docker-compose.yml up -d
 | Document | Purpose | Target Audience |
 |----------|---------|-----------------|
 | **README.md** | Project overview, features, quick start | Everyone |
+| **QUICKSTART.md** | 5-minute developer setup guide | Developers |
 | **INSTALLATION.md** | Complete installation walkthrough | System administrators |
+| **PROJECT_STRUCTURE.md** | Project organization and file details | Developers/administrators |
 | **setup.sh** | Automated installation script | Linux users |
 | **TROUBLESHOOTING.md** | Problem diagnosis and solutions | Support/maintenance |
 | **docs/DEPLOYMENT.md** | Advanced deployment strategies | DevOps/administrators |
