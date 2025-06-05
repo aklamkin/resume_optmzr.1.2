@@ -279,7 +279,8 @@ function App() {
   };
   const downloadResume = () => {
     const element = document.createElement('a');
-    const file = new Blob([optimizedResume], { type: 'text/plain' });
+    const resumeContent = optimizedResume || analysisResult?.original_resume || resumeText;
+    const file = new Blob([resumeContent], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
     element.download = 'optimized_resume.txt';
     document.body.appendChild(element);
