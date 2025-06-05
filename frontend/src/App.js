@@ -244,25 +244,7 @@ function App() {
 
 
 
-  // Retry operation with custom parameters
-  const handleRetryOperation = async () => {
-    setShowRetryDialog(false);
-    
-    if (retryOperation === 'analyze') {
-      await performAnalysis(customRetrySeconds, customRetryCount);
-    } else if (retryOperation === 'coverLetter') {
-      await performCoverLetterGeneration(customRetrySeconds, customRetryCount);
-    }
-  };
 
-  // Cancel retry operation
-  const cancelRetry = () => {
-    setShowRetryDialog(false);
-    setRetryError(null);
-    setRetryOperation(null);
-    setIsLoading(false);
-    setIsGeneratingCoverLetter(false);
-  };
 
   // Perform analysis with retry logic
   const performAnalysis = async (maxWaitSeconds = 30, maxRetries = 3) => {
