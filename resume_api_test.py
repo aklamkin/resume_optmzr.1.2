@@ -159,6 +159,9 @@ def test_analyze_endpoint_with_text():
 def create_sample_pdf():
     """Create a sample PDF file for testing file upload"""
     try:
+        # Create a temporary file
+        temp_pdf_path = "sample_resume.pdf"
+        
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
@@ -167,13 +170,11 @@ def create_sample_pdf():
         for line in SAMPLE_RESUME.split('\n'):
             pdf.cell(200, 10, txt=line, ln=True)
         
-        # Save to a BytesIO object instead of a file
-        pdf_buffer = io.BytesIO()
-        pdf.output(pdf_buffer)
-        pdf_buffer.seek(0)
+        # Save to a file
+        pdf.output(temp_pdf_path)
         
-        print("✅ Created sample PDF in memory for testing")
-        return pdf_buffer
+        print(f"✅ Created sample PDF file at {temp_pdf_path}")
+        return temp_pdf_path
     except Exception as e:
         print(f"❌ Error creating sample PDF: {str(e)}")
         return None
