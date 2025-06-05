@@ -88,32 +88,40 @@ function App() {
 
   // Analyze resume
   const analyzeResume = async () => {
-    if (!jobDescription.trim() || !resumeText.trim()) {
-      alert('Please fill in both job description and resume text');
+    if (!jobDescription.trim() || (!resumeText.trim() && !resumeFile)) {
+      alert('Please provide both job description and resume (either text or file)');
       return;
     }
 
     setIsLoading(true);
     try {
+      const formData = new FormData();
+      formData.append('job_description', jobDescription);
+      
+      if (resumeFile) {
+        formData.append('resume_file', resumeFile);
+      } else {
+        formData.append('resume_text', resumeText);
+      }
+
       const response = await fetch(`${API_BASE_URL}/analyze`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          job_description: jobDescription,
-          resume_text: resumeText,
-        }),
+        body: formData, // Don't set Content-Type header, let browser set it for FormData
       });
 
-      if (!response.ok) throw new Error('Analysis failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Analysis failed');
+      }
 
       const result = await response.json();
       setAnalysisResult(result);
-      setOptimizedResume(resumeText); // Start with original resume
+      
+      // Set optimized resume from the extracted text
+      setOptimizedResume(result.original_resume || resumeText);
     } catch (error) {
       console.error('Error analyzing resume:', error);
-      alert('Analysis failed. Please try again.');
+      alert(`Analysis failed: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
