@@ -250,6 +250,32 @@ function App() {
       console.log('Initialized optimized resume with:', initialResume.substring(0, 100) + '...');
     } catch (error) {
       console.error('Error analyzing resume:', error);
+      
+      // Check if this looks like a network/server error that should trigger retry dialog
+      const errorMessage = error.message.toLowerCase();
+      if (errorMessage.includes('upstream') || 
+          errorMessage.includes('gateway') || 
+          errorMessage.includes('timeout') ||
+          errorMessage.includes('network') ||
+          errorMessage.includes('fetch') ||
+          errorMessage.includes('invalid response format')) {
+        
+        // Create a retryable error for network/server issues
+        const retryableError = {
+          error_type: 'service_unavailable',
+          message: 'Unable to connect to AI service. This may be due to high demand or network issues.',
+          retryable: true,
+          retry_after_seconds: 30,
+          details: error.message
+        };
+        
+        setRetryError(retryableError);
+        setRetryOperation('analyze');
+        setShowRetryDialog(true);
+        return; // Don't proceed further, wait for user decision
+      }
+      
+      // For other errors, show regular alert
       alert(`Analysis failed: ${error.message}`);
     } finally {
       if (!showRetryDialog) {
