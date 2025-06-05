@@ -657,6 +657,12 @@ function App() {
               >
                 <div className="bg-green-50 px-4 py-3 border-b border-gray-200 flex-shrink-0">
                   <h3 className="font-semibold text-gray-900">Optimized Resume</h3>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {appliedSuggestions.size > 0 
+                      ? `✨ ${appliedSuggestions.size} suggestions applied`
+                      : '💡 Apply suggestions to see changes'
+                    }
+                  </div>
                 </div>
                 <div className="flex-1 p-4 overflow-auto">
                   <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
