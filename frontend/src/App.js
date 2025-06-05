@@ -139,7 +139,12 @@ function App() {
     }
 
     setIsLoading(true);
+    initializeProgress();
+    
     try {
+      // Start progress simulation
+      simulateProgress();
+      
       const formData = new FormData();
       formData.append('job_description', jobDescription);
       
@@ -159,7 +164,16 @@ function App() {
         throw new Error(errorData.detail || 'Analysis failed');
       }
 
+      // Step 5: Generating suggestions
+      updateProgress(4);
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       const result = await response.json();
+      
+      // Step 6: Finalizing
+      updateProgress(5);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       setAnalysisResult(result);
       
       // Set optimized resume from the extracted text
@@ -169,6 +183,8 @@ function App() {
       alert(`Analysis failed: ${error.message}`);
     } finally {
       setIsLoading(false);
+      setProgressSteps([]);
+      setCurrentStep(0);
     }
   };
 
