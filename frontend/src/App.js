@@ -2245,6 +2245,135 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Retry Dialog Modal */}
+      {showRetryDialog && retryError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100">
+            {/* Modal Header */}
+            <div className="text-center mb-6">
+              <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-2xl bg-orange-100 mb-4">
+                <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Service Temporarily Unavailable</h3>
+              <p className="text-gray-600">{retryError.message}</p>
+            </div>
+
+            {/* Error Details */}
+            <div className="bg-orange-50 rounded-lg p-4 mb-6">
+              <div className="flex items-center space-x-2 mb-2">
+                <span className="text-orange-800 font-medium">Error Type:</span>
+                <span className="text-orange-700 capitalize">{retryError.error_type?.replace('_', ' ')}</span>
+              </div>
+              {retryError.retry_after_seconds && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-orange-800 font-medium">Suggested wait:</span>
+                  <span className="text-orange-700">{retryError.retry_after_seconds} seconds</span>
+                </div>
+              )}
+            </div>
+
+            {/* Retry Configuration */}
+            <div className="mb-6">
+              <h4 className="font-semibold text-gray-900 mb-3">Retry Configuration</h4>
+              
+              {/* Retry Mode Toggle */}
+              <div className="flex items-center space-x-4 mb-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="retryMode"
+                    value="time"
+                    checked={retryMode === 'time'}
+                    onChange={(e) => setRetryMode(e.target.value)}
+                    className="mr-2 text-blue-600"
+                  />
+                  <span className="text-sm font-medium">Max time</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="retryMode"
+                    value="count"
+                    checked={retryMode === 'count'}
+                    onChange={(e) => setRetryMode(e.target.value)}
+                    className="mr-2 text-blue-600"
+                  />
+                  <span className="text-sm font-medium">Max attempts</span>
+                </label>
+              </div>
+
+              {/* Input based on mode */}
+              {retryMode === 'time' ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Maximum retry time (seconds):
+                  </label>
+                  <input
+                    type="number"
+                    min="10"
+                    max="300"
+                    value={customRetrySeconds}
+                    onChange={(e) => setCustomRetrySeconds(parseInt(e.target.value) || 30)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="30"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Will retry for up to {customRetrySeconds} seconds with increasing delays
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Maximum retry attempts:
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={customRetryCount}
+                    onChange={(e) => setCustomRetryCount(parseInt(e.target.value) || 3)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="3"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Will make up to {customRetryCount} retry attempts with 5-second delays
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3">
+              <button
+                onClick={executeRetryWithCustomSettings}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 flex items-center justify-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Retry {retryOperation === 'analyze' ? 'Analysis' : 'Cover Letter'}</span>
+              </button>
+              <button
+                onClick={cancelRetryOperation}
+                className="flex-1 bg-gray-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-all duration-200"
+              >
+                Cancel
+              </button>
+            </div>
+
+            {/* Help Text */}
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-xs text-blue-800">
+                💡 <strong>Tip:</strong> The AI service is experiencing high demand. 
+                Retrying with a longer wait time often works better than multiple quick attempts.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
