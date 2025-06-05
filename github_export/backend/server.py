@@ -80,6 +80,14 @@ def is_url_only(text: str) -> bool:
 def scrape_job_description(url: str) -> str:
     """Scrape job description from URL"""
     try:
+        # Check for URLs that commonly block scraping
+        blocked_domains = ['linkedin.com', 'indeed.com', 'glassdoor.com']
+        if any(domain in url.lower() for domain in blocked_domains):
+            raise HTTPException(
+                status_code=400, 
+                detail=f"🚫 {url.split('/')[2]} blocks automated scraping. Please copy-paste the job description text instead."
+            )
+        
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
@@ -123,16 +131,29 @@ def scrape_job_description(url: str) -> str:
         lines = [line.strip() for line in job_content.split('\n') if line.strip()]
         cleaned_text = '\n'.join(lines)
         
+        if len(cleaned_text) < 100:
+            raise HTTPException(
+                status_code=400, 
+                detail="⚠️ Could not extract job description. The page may require login or block automated access. Please copy-paste the job description instead."
+            )
+        
         # Limit to reasonable length (first 5000 characters)
         if len(cleaned_text) > 5000:
             cleaned_text = cleaned_text[:5000] + "..."
             
         return cleaned_text
         
+    except HTTPException:
+        raise
     except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}")
+        if "404" in str(e):
+            raise HTTPException(status_code=400, detail="🔍 URL not found. Please check the URL or copy-paste the job description instead.")
+        elif "403" in str(e):
+            raise HTTPException(status_code=400, detail="🚫 Access denied. This site blocks automated access. Please copy-paste the job description instead.")
+        else:
+            raise HTTPException(status_code=400, detail=f"🌐 Could not access URL: {str(e)}. Please try copy-pasting the job description instead.")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to scrape job description: {str(e)}")
+        raise HTTPException(status_code=400, detail="⚠️ Could not scrape job description. Please copy-paste the job description text instead.")
 
 # AI Integration using emergentintegrations
 async def get_ai_response(job_description: str, resume_text: str):
