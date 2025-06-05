@@ -598,6 +598,12 @@ function App() {
                   <h3 className="font-semibold text-gray-900">
                     AI Suggestions ({getSuggestions().length})
                   </h3>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {analysisResult?.source_info?.job_source === 'url' 
+                      ? '🌐 Job description scraped from URL'
+                      : '📝 Job description from text input'
+                    }
+                  </div>
                 </div>
                 <div className="flex-1 p-4 overflow-auto">
                   <div className="space-y-3">
