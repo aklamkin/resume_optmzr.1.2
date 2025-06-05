@@ -329,6 +329,72 @@ Format your response as JSON with the following structure:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")
 
+async def get_cover_letter_response_with_retry(job_description: str, resume_text: str, max_retries: int = 3, retry_delay: int = 5):
+    """
+    Get cover letter response with built-in retry logic for handling service overloads
+    """
+    for attempt in range(max_retries + 1):
+        try:
+            print(f"📝 Cover Letter Generation Attempt {attempt + 1}/{max_retries + 1}")
+            response = await get_cover_letter_response(job_description, resume_text)
+            return RetryableResponse(success=True, data=response)
+            
+        except Exception as e:
+            error_str = str(e).lower()
+            
+            # Classify the error type (same logic as AI analysis)
+            if "overloaded" in error_str or "503" in error_str or "unavailable" in error_str:
+                error_type = "service_unavailable"
+                retryable = True
+                retry_after = retry_delay * (attempt + 1)
+                message = "AI service is currently overloaded. Please try again in a few moments."
+            elif "timeout" in error_str or "timed out" in error_str:
+                error_type = "timeout"
+                retryable = True
+                retry_after = retry_delay
+                message = "Request timed out. The service may be experiencing high load."
+            elif "rate limit" in error_str or "429" in error_str:
+                error_type = "rate_limit"
+                retryable = True
+                retry_after = 60
+                message = "Rate limit exceeded. Please wait a moment before trying again."
+            elif "unauthorized" in error_str or "401" in error_str or "invalid api key" in error_str:
+                error_type = "authentication"
+                retryable = False
+                retry_after = None
+                message = "Authentication failed. Please check API key configuration."
+            else:
+                error_type = "unknown"
+                retryable = attempt < max_retries
+                retry_after = retry_delay
+                message = f"Cover letter generation error: {str(e)}"
+            
+            error_response = APIError(
+                error_type=error_type,
+                message=message,
+                retryable=retryable,
+                retry_after_seconds=retry_after,
+                details=str(e)
+            )
+            
+            if attempt >= max_retries or not retryable:
+                print(f"❌ Cover letter generation final attempt failed: {error_response.message}")
+                return RetryableResponse(success=False, error=error_response)
+            
+            if retryable and attempt < max_retries:
+                print(f"⏳ Retrying cover letter generation in {retry_after} seconds...")
+                await asyncio.sleep(retry_after)
+                continue
+                
+    return RetryableResponse(
+        success=False, 
+        error=APIError(
+            error_type="unknown",
+            message="Maximum retries exceeded",
+            retryable=False
+        )
+    )
+
 async def get_cover_letter_response(job_description: str, resume_text: str):
     try:
         # Import the emergentintegrations library
