@@ -11,6 +11,10 @@ import requests
 from bs4 import BeautifulSoup
 import pdfplumber
 from docx import Document
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI(
     title="Resume Optimizer API",
