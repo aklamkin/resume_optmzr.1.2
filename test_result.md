@@ -265,5 +265,7 @@ agent_communication:
     message: "Resume Optimizer 1.0 application is fully deployed and running. Backend server on port 8001 with Gemini API integration. Frontend on port 3000 with professional UI. All dependencies installed and services restarted successfully. Ready for testing and user feedback."
   - agent: "user"
     message: "Reported 404 error when using LinkedIn URL with PDF file upload - got 'Analysis failed: Not Found'"
+  - agent: "user"
+    message: "Reported AI analysis failed error when using text job description (instead of LinkedIn URL) with PDF file upload"
   - agent: "main"
-    message: "FIXED: API routing issue resolved by adding /api prefix to backend endpoints. Enhanced error handling for LinkedIn/Indeed URLs with specific user guidance. Added visual warnings in UI for problematic URLs. Both services restarted successfully."
+    message: "FIXED: LlmChat initialization issue resolved by properly passing system_message parameter. Enhanced error logging added. Backend restarted successfully. Should now work with text job descriptions and file uploads."
