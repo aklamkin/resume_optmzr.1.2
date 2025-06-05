@@ -235,6 +235,36 @@ frontend:
         agent: "main"
         comment: "Professional modal with short/long version switching and download functionality"
 
+  - task: "Apply/Remove suggestions functionality"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Apply/Remove buttons change state but don't modify resume text - critical issue reported in continuation request"
+      - working: true
+        agent: "main"
+        comment: "FIXED: Completely rewrote toggleSuggestion function with robust text replacement strategies including exact match, normalized whitespace, partial match, and fallback options. Added comprehensive console logging for debugging. Improved error handling and user feedback."
+
+  - task: "Add skill/keyword to resume functionality"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Add buttons in Skills Gap and ATS Keywords popups may not be functioning properly"
+      - working: true
+        agent: "main"
+        comment: "FIXED: Enhanced addSkillToResume and addKeywordToResume functions with duplicate detection, better pattern matching, improved error handling, and comprehensive logging. Functions now properly validate resume content and provide user feedback."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
