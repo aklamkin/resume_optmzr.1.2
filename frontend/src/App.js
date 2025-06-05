@@ -471,7 +471,12 @@ function App() {
                   {/* Status indicator */}
                   <div className="mt-3 text-sm text-gray-600">
                     {isLikelyURL(jobDescription) && (
-                      <div className="text-blue-600">🌐 Will scrape job description from URL</div>
+                      <div className={`${isProblematicURL(jobDescription) ? 'text-orange-600' : 'text-blue-600'}`}>
+                        {isProblematicURL(jobDescription) 
+                          ? '⚠️ LinkedIn/Indeed may block scraping - use text if this fails'
+                          : '🌐 Will scrape job description from URL'
+                        }
+                      </div>
                     )}
                     {resumeFile && (
                       <div className="text-green-600">📄 Will extract text from {resumeFile.name}</div>
