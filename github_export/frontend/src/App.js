@@ -366,6 +366,9 @@ function App() {
                       <span className="text-blue-600 text-xs block mt-1">
                         💡 Paste job description OR job posting URL
                       </span>
+                      <span className="text-red-500 text-xs block">
+                        ⚠️ LinkedIn/Indeed/Glassdoor block scraping - copy-paste text instead
+                      </span>
                     </label>
                     <div className="flex-1 relative">
                       <textarea
