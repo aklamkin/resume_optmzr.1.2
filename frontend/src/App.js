@@ -25,6 +25,7 @@ function App() {
   const [currentStep, setCurrentStep] = useState(0);
   const [appliedSuggestions, setAppliedSuggestions] = useState(new Set());
   const [optimizedResume, setOptimizedResume] = useState('');
+  const [isEditingResume, setIsEditingResume] = useState(false);
   
   // Resizable panels state
   const [panelWidths, setPanelWidths] = useState([33.33, 33.33, 33.33]); // percentages
