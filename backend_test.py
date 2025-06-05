@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 
 class ResumeOptimizerTester:
-    def __init__(self, base_url="https://6fd0515b-042e-4ce3-9728-85db9a0c464b.preview.emergentagent.com"):
+    def __init__(self, base_url="https://392743ab-18eb-4c10-94ab-0a87d0b0f4b6.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
