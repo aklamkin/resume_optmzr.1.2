@@ -1073,7 +1073,11 @@ function App() {
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100 flex-shrink-0 sticky top-0 z-40">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center space-x-3">
+          <div 
+            onClick={resetForm}
+            className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity duration-200"
+            title="Return to home page"
+          >
             <ResumeOptimizerLogo className="w-10 h-10" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">ResumeAI</h1>
