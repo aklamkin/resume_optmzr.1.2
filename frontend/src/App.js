@@ -306,12 +306,7 @@ function App() {
         await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
       }
     }
-  };
 
-
-
-  // Perform analysis with retry logic
-  const performAnalysis = async (maxWaitSeconds = 30, maxRetries = 3) => {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`🔄 Analysis attempt ${attempt}/${maxRetries}`);
