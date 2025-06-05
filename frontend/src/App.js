@@ -222,66 +222,134 @@ function App() {
     }
   };
 
-  // Apply or remove suggestion with better handling
+  // Apply or remove suggestion with IMPROVED handling
   const toggleSuggestion = (index, suggestion) => {
+    console.log('🔧 toggleSuggestion called:', { index, suggestion, appliedSuggestions: appliedSuggestions.has(index) });
+    
     const newApplied = new Set(appliedSuggestions);
     
     if (appliedSuggestions.has(index)) {
       // Remove suggestion - revert back to original
+      console.log('🔄 Removing suggestion...');
       newApplied.delete(index);
-      if (suggestion.current_text) {
-        setOptimizedResume(prev => {
-          let updated = prev.replace(suggestion.suggested_text, suggestion.current_text);
+      
+      setOptimizedResume(prev => {
+        console.log('📝 Current resume length:', prev?.length || 0);
+        let updated = prev || analysisResult?.original_resume || resumeText || '';
+        
+        if (suggestion.current_text && suggestion.suggested_text) {
+          // Try to replace suggested text back to current text
+          const patterns = [
+            suggestion.suggested_text,
+            `\n${suggestion.suggested_text}\n`,
+            `\n${suggestion.suggested_text}`,
+            `${suggestion.suggested_text}\n`,
+            `[${(suggestion.section || 'GENERAL').toUpperCase()} UPDATE]\n${suggestion.suggested_text}`,
+            `[NEW ${(suggestion.section || 'ADDITIONAL').toUpperCase()}]\n${suggestion.suggested_text}`
+          ];
           
-          // If exact replacement doesn't work, try with line breaks
-          if (updated === prev) {
-            updated = prev.replace(`\n${suggestion.suggested_text}\n`, `\n${suggestion.current_text}\n`);
+          for (const pattern of patterns) {
+            if (updated.includes(pattern)) {
+              updated = updated.replace(pattern, suggestion.current_text || '');
+              console.log('✅ Removed using pattern:', pattern.substring(0, 50) + '...');
+              break;
+            }
           }
+        } else {
+          // Remove added content (no original text to revert to)
+          const patternsToRemove = [
+            suggestion.suggested_text,
+            `\n${suggestion.suggested_text}`,
+            `${suggestion.suggested_text}\n`,
+            `\n\n[NEW ${(suggestion.section || 'ADDITIONAL').toUpperCase()}]\n${suggestion.suggested_text}`,
+            `\n\n[${(suggestion.section || 'GENERAL').toUpperCase()} UPDATE]\n${suggestion.suggested_text}`
+          ];
           
-          // If still no change, try removing the [ADDED] prefix if it exists
-          if (updated === prev) {
-            updated = prev.replace(`[ADDED] ${suggestion.suggested_text}`, '');
-            updated = updated.replace(/\n\n\n+/g, '\n\n'); // Clean up extra newlines
+          for (const pattern of patternsToRemove) {
+            if (updated.includes(pattern)) {
+              updated = updated.replace(pattern, '');
+              console.log('🗑️ Removed added content:', pattern.substring(0, 50) + '...');
+              break;
+            }
           }
-          
-          return updated;
-        });
-      }
+        }
+        
+        // Clean up extra newlines
+        updated = updated.replace(/\n\n\n+/g, '\n\n').replace(/^\n+|\n+$/g, '');
+        console.log('📄 Updated resume length:', updated.length);
+        return updated;
+      });
     } else {
       // Apply suggestion
+      console.log('✅ Applying suggestion...');
       newApplied.add(index);
       
-      if (suggestion.current_text) {
-        // Replace existing text
-        setOptimizedResume(prev => {
-          let updated = prev.replace(suggestion.current_text, suggestion.suggested_text);
+      setOptimizedResume(prev => {
+        console.log('📝 Current resume length:', prev?.length || 0);
+        let updated = prev || analysisResult?.original_resume || resumeText || '';
+        
+        if (!updated) {
+          console.error('❌ No resume content to modify');
+          alert('No resume content found to modify. Please ensure your resume is loaded.');
+          return prev;
+        }
+        
+        if (suggestion.current_text && suggestion.suggested_text) {
+          // Replace existing text with improved matching
+          console.log('🔄 Replacing existing text...');
           
-          // If exact replacement doesn't work, try with different whitespace patterns
-          if (updated === prev) {
-            // Try replacing with normalized whitespace
-            const normalizedCurrent = suggestion.current_text.replace(/\s+/g, ' ').trim();
-            const normalizedPrev = prev.replace(/\s+/g, ' ');
-            if (normalizedPrev.includes(normalizedCurrent)) {
-              updated = prev.replace(suggestion.current_text, suggestion.suggested_text);
+          // Try multiple replacement strategies
+          const strategies = [
+            // Exact match
+            () => updated.replace(suggestion.current_text, suggestion.suggested_text),
+            // Normalized whitespace match
+            () => {
+              const normalizedCurrent = suggestion.current_text.replace(/\s+/g, ' ').trim();
+              const normalizedSuggested = suggestion.suggested_text.replace(/\s+/g, ' ').trim();
+              return updated.replace(new RegExp(normalizedCurrent.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), normalizedSuggested);
+            },
+            // Partial match (first 20 chars)
+            () => {
+              const partialMatch = suggestion.current_text.substring(0, 20);
+              if (updated.includes(partialMatch)) {
+                const startIndex = updated.indexOf(partialMatch);
+                const endIndex = startIndex + suggestion.current_text.length;
+                return updated.substring(0, startIndex) + suggestion.suggested_text + updated.substring(endIndex);
+              }
+              return updated;
+            }
+          ];
+          
+          for (const strategy of strategies) {
+            const result = strategy();
+            if (result !== updated) {
+              console.log('✅ Text replacement successful');
+              updated = result;
+              break;
             }
           }
           
-          // If replacement still didn't work, add as new content with context
+          // If no replacement worked, add as improvement section
           if (updated === prev) {
+            console.log('📝 Adding as improvement section...');
             const section = suggestion.section || 'General';
-            updated = `${prev}\n\n[${section.toUpperCase()} UPDATE]\n${suggestion.suggested_text}`;
+            updated = `${updated}\n\n[${section.toUpperCase()} IMPROVEMENT]\n${suggestion.suggested_text}`;
           }
           
-          return updated;
-        });
-      } else {
-        // Add new content
-        const section = suggestion.section || 'Additional';
-        setOptimizedResume(prev => `${prev}\n\n[NEW ${section.toUpperCase()}]\n${suggestion.suggested_text}`);
-      }
+        } else {
+          // Add new content
+          console.log('➕ Adding new content...');
+          const section = suggestion.section || 'Additional';
+          updated = `${updated}\n\n[NEW ${section.toUpperCase()}]\n${suggestion.suggested_text}`;
+        }
+        
+        console.log('📄 Updated resume length:', updated.length);
+        return updated;
+      });
     }
     
     setAppliedSuggestions(newApplied);
+    console.log('🎯 Applied suggestions updated:', newApplied.size, 'total applied');
   };
 
   // Generate cover letter
