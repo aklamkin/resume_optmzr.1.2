@@ -578,7 +578,7 @@ function App() {
           formData.append('resume_text', optimizedResume || resumeText);
         }
 
-        const response = await fetch(`${API_BASE_URL}/generate-cover-letter`, {
+        const response = await fetch(`${API_BASE_URL}/api/generate-cover-letter`, {
           method: 'POST',
           body: formData,
         });
