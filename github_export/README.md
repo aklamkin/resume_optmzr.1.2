@@ -69,9 +69,13 @@ A free, professional resume optimization tool that uses AI to analyze your resum
 
 ## 🎯 How to Use
 
-1. **Enter Job Description**: Paste the job posting in the left textarea
-2. **Enter Your Resume**: Paste your current resume text in the right textarea
-3. **Click "Analyze Resume"**: AI will analyze and provide suggestions
+1. **Enter Job Description**: 
+   - **Option A**: Paste job description text, OR
+   - **Option B**: Paste job posting URL (will auto-scrape content)
+2. **Enter Your Resume**: 
+   - **Option A**: Upload PDF or DOCX file (auto-extracts text), OR
+   - **Option B**: Paste resume text directly
+3. **Click "Analyze Resume"**: AI will process your inputs and provide suggestions
 4. **Review Ratings**: Click on Skills Gap, ATS Keywords, or Overall Score for details
 5. **Apply Suggestions**: Toggle individual suggestions on/off with live preview
 6. **Generate Cover Letter**: Create professional cover letters in two lengths
