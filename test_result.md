@@ -145,13 +145,16 @@ backend:
     implemented: true
     working: true
     file: "/app/backend/server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported AI analysis failed error when using text job description and PDF file"
       - working: true
         agent: "main"
-        comment: "Gemini 2.0 Flash integration via emergentintegrations with structured JSON responses"
+        comment: "Fixed LlmChat initialization by properly passing system_message parameter. Added enhanced logging for AI analysis debugging"
 
   - task: "Cover letter generation endpoint"
     implemented: true
