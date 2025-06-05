@@ -6,6 +6,7 @@ const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 function App() {
   const [jobDescription, setJobDescription] = useState('');
   const [resumeText, setResumeText] = useState('');
+  const [resumeFile, setResumeFile] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [appliedSuggestions, setAppliedSuggestions] = useState(new Set());
