@@ -201,7 +201,17 @@ function App() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Analysis failed');
+        
+        // Check if it's a retryable error (503 Service Unavailable)
+        if (response.status === 503 && errorData.detail && typeof errorData.detail === 'object' && errorData.detail.retryable) {
+          // Show retry dialog for service overload errors
+          setRetryError(errorData.detail);
+          setRetryOperation('analyze');
+          setShowRetryDialog(true);
+          return; // Don't proceed further, wait for user decision
+        }
+        
+        throw new Error(errorData.detail?.message || errorData.detail || 'Analysis failed');
       }
 
       // Step 5: Generating suggestions
@@ -224,9 +234,11 @@ function App() {
       console.error('Error analyzing resume:', error);
       alert(`Analysis failed: ${error.message}`);
     } finally {
-      setIsLoading(false);
-      setProgressSteps([]);
-      setCurrentStep(0);
+      if (!showRetryDialog) {
+        setIsLoading(false);
+        setProgressSteps([]);
+        setCurrentStep(0);
+      }
     }
   };
 
