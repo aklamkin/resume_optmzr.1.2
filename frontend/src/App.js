@@ -280,7 +280,7 @@ function App() {
   };
 
   // Retry operation with custom parameters
-  const retryOperation = async () => {
+  const handleRetryOperation = async () => {
     setShowRetryDialog(false);
     
     if (retryOperation === 'analyze') {
