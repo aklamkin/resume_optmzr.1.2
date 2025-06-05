@@ -863,15 +863,49 @@ function App() {
                   <h2 className="text-2xl font-bold text-gray-900">Analysis Results</h2>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <button
-                    onClick={downloadResume}
-                    className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 text-sm shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>Download Resume</span>
-                  </button>
+                  {/* Resume Download Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
+                      className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 text-sm shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>Download Resume</span>
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                    
+                    {showDownloadDropdown && (
+                      <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-xl shadow-lg z-50 min-w-[160px]">
+                        <div className="py-2">
+                          <button
+                            onClick={() => { downloadResume('txt'); setShowDownloadDropdown(false); }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                          >
+                            <span>📄</span>
+                            <span>Download as TXT</span>
+                          </button>
+                          <button
+                            onClick={() => { downloadResume('docx'); setShowDownloadDropdown(false); }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                          >
+                            <span>📘</span>
+                            <span>Download as DOCX</span>
+                          </button>
+                          <button
+                            onClick={() => { downloadResume('pdf'); setShowDownloadDropdown(false); }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                          >
+                            <span>📕</span>
+                            <span>Download as PDF</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={generateCoverLetter}
                     disabled={isGeneratingCoverLetter}
