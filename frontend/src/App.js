@@ -306,65 +306,6 @@ function App() {
         await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
       }
     }
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`🔄 Analysis attempt ${attempt}/${maxRetries}`);
-        
-        const formData = new FormData();
-        formData.append('job_description', jobDescription);
-        
-        if (resumeFile) {
-          formData.append('resume_file', resumeFile);
-        } else {
-          formData.append('resume_text', resumeText);
-        }
-
-        const response = await fetch(`${API_BASE_URL}/analyze`, {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (response.ok) {
-          // Success!
-          updateProgress(4);
-          await new Promise(resolve => setTimeout(resolve, 300));
-
-          const result = await response.json();
-          
-          updateProgress(5);
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          setAnalysisResult(result);
-          const initialResume = result.original_resume || resumeText || '';
-          setOptimizedResume(initialResume);
-          console.log('✅ Analysis completed successfully');
-          return;
-          
-        } else {
-          const errorData = await response.json();
-          
-          // Check if this is the last attempt
-          if (attempt >= maxRetries) {
-            throw new Error(JSON.stringify(errorData.detail || errorData));
-          }
-          
-          // Wait before next attempt
-          const waitTime = Math.min(maxWaitSeconds / maxRetries * attempt, maxWaitSeconds);
-          console.log(`⏳ Waiting ${waitTime} seconds before retry...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
-        }
-        
-      } catch (error) {
-        if (attempt >= maxRetries) {
-          throw error;
-        }
-        
-        const waitTime = Math.min(maxWaitSeconds / maxRetries * attempt, maxWaitSeconds);
-        console.log(`⏳ Error on attempt ${attempt}, waiting ${waitTime} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
-      }
-    }
   };
 
   // Apply or remove suggestion with IMPROVED handling
