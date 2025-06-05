@@ -302,6 +302,7 @@ function App() {
     setShowCoverLetter(false);
     setShowRatingPopup(false);
     setSelectedRating(null);
+    setIsEditingResume(false);
   };
 
   // Handle file selection
