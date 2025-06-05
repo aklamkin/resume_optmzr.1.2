@@ -88,6 +88,49 @@ function App() {
     }
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
+  // Progress tracking
+  const initializeProgress = () => {
+    const steps = [
+      { id: 1, label: 'Preparing analysis...', status: 'pending' },
+      { id: 2, label: 'Processing resume...', status: 'pending' },
+      { id: 3, label: 'Analyzing job description...', status: 'pending' },
+      { id: 4, label: 'AI optimization in progress...', status: 'pending' },
+      { id: 5, label: 'Generating suggestions...', status: 'pending' },
+      { id: 6, label: 'Finalizing results...', status: 'pending' }
+    ];
+    setProgressSteps(steps);
+    setCurrentStep(0);
+  };
+
+  const updateProgress = (stepIndex, status = 'completed') => {
+    setProgressSteps(prev => prev.map((step, index) => {
+      if (index === stepIndex) {
+        return { ...step, status };
+      } else if (index < stepIndex) {
+        return { ...step, status: 'completed' };
+      }
+      return step;
+    }));
+    setCurrentStep(stepIndex);
+  };
+
+  const simulateProgress = async () => {
+    // Step 1: Preparing
+    await new Promise(resolve => setTimeout(resolve, 500));
+    updateProgress(0);
+    
+    // Step 2: Processing resume
+    await new Promise(resolve => setTimeout(resolve, 800));
+    updateProgress(1);
+    
+    // Step 3: Analyzing job description
+    await new Promise(resolve => setTimeout(resolve, 600));
+    updateProgress(2);
+    
+    // Step 4: AI processing (this is where the real work happens)
+    updateProgress(3, 'active');
+  };
+
   // Analyze resume
   const analyzeResume = async () => {
     if (!jobDescription.trim() || (!resumeText.trim() && !resumeFile)) {
