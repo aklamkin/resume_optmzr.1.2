@@ -269,14 +269,30 @@ test_plan:
         agent: "testing"
         comment: "Verified all API endpoints are accessible with the /api prefix. LinkedIn URL handling includes proper error messages."
 
+  - task: "Progress indicator for analysis"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added comprehensive progress modal with step-by-step indicators, progress bar, animations, and improved button loading states for better UX"
+
 agent_communication:
   - agent: "main"
     message: "Resume Optimizer 1.0 application is fully deployed and running. Backend server on port 8001 with Gemini API integration. Frontend on port 3000 with professional UI. All dependencies installed and services restarted successfully. Ready for testing and user feedback."
   - agent: "user"
     message: "Reported 404 error when using LinkedIn URL with PDF file upload - got 'Analysis failed: Not Found'"
+  - agent: "main"
+    message: "FIXED: API routing issue resolved by adding /api prefix to backend endpoints. Enhanced error handling for LinkedIn/Indeed URLs with specific user guidance. Added visual warnings in UI for problematic URLs. Both services restarted successfully."
   - agent: "user"
     message: "Reported AI analysis failed error when using text job description (instead of LinkedIn URL) with PDF file upload"
   - agent: "main"
     message: "FIXED: LlmChat initialization issue resolved by properly passing system_message parameter. Enhanced error logging added. Backend restarted successfully. Should now work with text job descriptions and file uploads."
-  - agent: "testing"
-    message: "Completed comprehensive testing of all backend API endpoints. Health check, AI integration test, resume analysis with text input, resume analysis with file upload, and cover letter generation all working correctly. The AI analysis endpoint is now functioning properly with both text input and file upload. No 500 errors observed during testing."
+  - agent: "user"
+    message: "Requested progress indicator for analysis call to show that work is happening behind the scenes"
+  - agent: "main"
+    message: "ADDED: Comprehensive progress modal with 6-step progress tracking, animated progress bar, step completion indicators, estimated time display, and enhanced button loading states. Frontend restarted successfully."
