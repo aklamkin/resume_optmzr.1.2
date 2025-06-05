@@ -12,9 +12,17 @@ from bs4 import BeautifulSoup
 import pdfplumber
 from docx import Document
 from dotenv import load_dotenv
+import time
+import asyncio
 
 # Load environment variables
 load_dotenv()
+
+# Debug: Check if API key is loaded
+api_key_check = os.environ.get('GEMINI_API_KEY')
+print(f"🔑 API Key loaded at startup: {bool(api_key_check)}")
+if api_key_check:
+    print(f"🔑 API Key starts with: {api_key_check[:10]}...")
 
 app = FastAPI(
     title="Resume Optimizer API",
@@ -80,13 +88,12 @@ def is_url_only(text: str) -> bool:
 def scrape_job_description(url: str) -> str:
     """Scrape job description from URL"""
     try:
-        # Check for URLs that commonly block scraping
-        blocked_domains = ['linkedin.com', 'indeed.com', 'glassdoor.com']
-        if any(domain in url.lower() for domain in blocked_domains):
-            raise HTTPException(
-                status_code=400, 
-                detail=f"🚫 {url.split('/')[2]} blocks automated scraping. Please copy-paste the job description text instead."
-            )
+        # Check for known problematic sites
+        if 'linkedin.com' in url.lower():
+            raise HTTPException(status_code=400, detail="LinkedIn blocks automated access. Please copy and paste the job description text directly instead of using the URL.")
+        
+        if 'indeed.com' in url.lower():
+            raise HTTPException(status_code=400, detail="Indeed may block automated access. If this fails, please copy and paste the job description text directly.")
         
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -131,35 +138,111 @@ def scrape_job_description(url: str) -> str:
         lines = [line.strip() for line in job_content.split('\n') if line.strip()]
         cleaned_text = '\n'.join(lines)
         
-        if len(cleaned_text) < 100:
-            raise HTTPException(
-                status_code=400, 
-                detail="⚠️ Could not extract job description. The page may require login or block automated access. Please copy-paste the job description instead."
-            )
-        
         # Limit to reasonable length (first 5000 characters)
         if len(cleaned_text) > 5000:
             cleaned_text = cleaned_text[:5000] + "..."
             
         return cleaned_text
         
-    except HTTPException:
-        raise
     except requests.exceptions.RequestException as e:
-        if "404" in str(e):
-            raise HTTPException(status_code=400, detail="🔍 URL not found. Please check the URL or copy-paste the job description instead.")
-        elif "403" in str(e):
-            raise HTTPException(status_code=400, detail="🚫 Access denied. This site blocks automated access. Please copy-paste the job description instead.")
+        if "403" in str(e) or "Forbidden" in str(e):
+            raise HTTPException(status_code=400, detail=f"Website blocks automated access. Please copy and paste the job description text directly instead of using the URL.")
+        elif "404" in str(e) or "Not Found" in str(e):
+            raise HTTPException(status_code=400, detail=f"Job posting not found at this URL. Please check the URL or copy and paste the job description text directly.")
         else:
-            raise HTTPException(status_code=400, detail=f"🌐 Could not access URL: {str(e)}. Please try copy-pasting the job description instead.")
+            raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}. Try copying and pasting the job description text directly.")
     except Exception as e:
-        raise HTTPException(status_code=400, detail="⚠️ Could not scrape job description. Please copy-paste the job description text instead.")
+        raise HTTPException(status_code=400, detail=f"Failed to scrape job description: {str(e)}. Please copy and paste the job description text directly instead of using the URL.")
 
-# AI Integration using emergentintegrations
+# Enhanced error response models
+class APIError(BaseModel):
+    error_type: str  # "service_unavailable", "timeout", "rate_limit", "authentication", "unknown"
+    message: str
+    retryable: bool
+    retry_after_seconds: Optional[int] = None
+    details: Optional[str] = None
+
+class RetryableResponse(BaseModel):
+    success: bool
+    data: Optional[dict] = None
+    error: Optional[APIError] = None
+
+# AI Integration using emergentintegrations with enhanced error handling
+async def get_ai_response_with_retry(job_description: str, resume_text: str, max_retries: int = 3, retry_delay: int = 5):
+    """
+    Get AI response with built-in retry logic for handling service overloads
+    """
+    for attempt in range(max_retries + 1):
+        try:
+            print(f"🤖 AI Analysis Attempt {attempt + 1}/{max_retries + 1}")
+            response = await get_ai_response(job_description, resume_text)
+            return RetryableResponse(success=True, data={"analysis": response})
+            
+        except Exception as e:
+            error_str = str(e).lower()
+            
+            # Classify the error type
+            if "overloaded" in error_str or "503" in error_str or "unavailable" in error_str:
+                error_type = "service_unavailable"
+                retryable = True
+                retry_after = retry_delay * (attempt + 1)  # Exponential backoff
+                message = "AI service is currently overloaded. Please try again in a few moments."
+            elif "timeout" in error_str or "timed out" in error_str:
+                error_type = "timeout"
+                retryable = True
+                retry_after = retry_delay
+                message = "Request timed out. The service may be experiencing high load."
+            elif "rate limit" in error_str or "429" in error_str:
+                error_type = "rate_limit"
+                retryable = True
+                retry_after = 60  # Wait longer for rate limits
+                message = "Rate limit exceeded. Please wait a moment before trying again."
+            elif "unauthorized" in error_str or "401" in error_str or "invalid api key" in error_str:
+                error_type = "authentication"
+                retryable = False
+                retry_after = None
+                message = "Authentication failed. Please check API key configuration."
+            else:
+                error_type = "unknown"
+                retryable = attempt < max_retries  # Only retry for unknown errors if we have attempts left
+                retry_after = retry_delay
+                message = f"AI service error: {str(e)}"
+            
+            error_response = APIError(
+                error_type=error_type,
+                message=message,
+                retryable=retryable,
+                retry_after_seconds=retry_after,
+                details=str(e)
+            )
+            
+            # If this is our last attempt or error is not retryable, return the error
+            if attempt >= max_retries or not retryable:
+                print(f"❌ Final attempt failed: {error_response.message}")
+                return RetryableResponse(success=False, error=error_response)
+            
+            # If retryable, wait and try again
+            if retryable and attempt < max_retries:
+                print(f"⏳ Retrying in {retry_after} seconds... (Attempt {attempt + 1}/{max_retries + 1})")
+                await asyncio.sleep(retry_after)
+                continue
+                
+    # Should never reach here, but just in case
+    return RetryableResponse(
+        success=False, 
+        error=APIError(
+            error_type="unknown",
+            message="Maximum retries exceeded",
+            retryable=False
+        )
+    )
+
 async def get_ai_response(job_description: str, resume_text: str):
     try:
         # Import the emergentintegrations library
         from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        print(f"🤖 Starting AI analysis - Job desc: {len(job_description)} chars, Resume: {len(resume_text)} chars")
         
         system_prompt = """You are an expert resume optimization assistant. Your task is to analyze a resume against a specific job description and provide detailed, actionable suggestions for improvement.
 
@@ -198,8 +281,10 @@ Format your response as JSON with the following structure:
         # Create AI chat instance
         api_key = os.environ.get('GEMINI_API_KEY')
         if not api_key:
+            print("❌ Gemini API key not found")
             raise HTTPException(status_code=500, detail="Gemini API key not configured")
             
+        print("🔑 API key found, creating chat instance...")
         chat = LlmChat(
             api_key=api_key,
             session_id=f"resume_analysis_{uuid.uuid4()}",
@@ -219,8 +304,10 @@ Format your response as JSON with the following structure:
             """
         )
 
+        print("📤 Sending message to AI...")
         # Get AI response
         response = await chat.send_message(user_message)
+        print("📥 Received AI response")
         
         # Clean up the response - remove markdown code blocks if present
         cleaned_response = str(response)
@@ -233,10 +320,80 @@ Format your response as JSON with the following structure:
             if end_index > start_index:
                 cleaned_response = cleaned_response[start_index:end_index].strip()
         
+        print("✅ AI analysis completed successfully")
         return cleaned_response
         
     except Exception as e:
+        print(f"❌ AI analysis error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")
+
+async def get_cover_letter_response_with_retry(job_description: str, resume_text: str, max_retries: int = 3, retry_delay: int = 5):
+    """
+    Get cover letter response with built-in retry logic for handling service overloads
+    """
+    for attempt in range(max_retries + 1):
+        try:
+            print(f"📝 Cover Letter Generation Attempt {attempt + 1}/{max_retries + 1}")
+            response = await get_cover_letter_response(job_description, resume_text)
+            return RetryableResponse(success=True, data=response)
+            
+        except Exception as e:
+            error_str = str(e).lower()
+            
+            # Classify the error type (same logic as AI analysis)
+            if "overloaded" in error_str or "503" in error_str or "unavailable" in error_str:
+                error_type = "service_unavailable"
+                retryable = True
+                retry_after = retry_delay * (attempt + 1)
+                message = "AI service is currently overloaded. Please try again in a few moments."
+            elif "timeout" in error_str or "timed out" in error_str:
+                error_type = "timeout"
+                retryable = True
+                retry_after = retry_delay
+                message = "Request timed out. The service may be experiencing high load."
+            elif "rate limit" in error_str or "429" in error_str:
+                error_type = "rate_limit"
+                retryable = True
+                retry_after = 60
+                message = "Rate limit exceeded. Please wait a moment before trying again."
+            elif "unauthorized" in error_str or "401" in error_str or "invalid api key" in error_str:
+                error_type = "authentication"
+                retryable = False
+                retry_after = None
+                message = "Authentication failed. Please check API key configuration."
+            else:
+                error_type = "unknown"
+                retryable = attempt < max_retries
+                retry_after = retry_delay
+                message = f"Cover letter generation error: {str(e)}"
+            
+            error_response = APIError(
+                error_type=error_type,
+                message=message,
+                retryable=retryable,
+                retry_after_seconds=retry_after,
+                details=str(e)
+            )
+            
+            if attempt >= max_retries or not retryable:
+                print(f"❌ Cover letter generation final attempt failed: {error_response.message}")
+                return RetryableResponse(success=False, error=error_response)
+            
+            if retryable and attempt < max_retries:
+                print(f"⏳ Retrying cover letter generation in {retry_after} seconds...")
+                await asyncio.sleep(retry_after)
+                continue
+                
+    return RetryableResponse(
+        success=False, 
+        error=APIError(
+            error_type="unknown",
+            message="Maximum retries exceeded",
+            retryable=False
+        )
+    )
 
 async def get_cover_letter_response(job_description: str, resume_text: str):
     try:
@@ -346,23 +503,47 @@ Format the response as JSON with this structure:
 
 # API Routes
 
-@app.get("/")
+@app.get("/api/")
 async def root():
     return {
         "message": "Resume Optimizer API v1.0", 
         "status": "healthy",
         "endpoints": {
-            "health": "/health",
-            "analyze": "/analyze",
-            "generate_cover_letter": "/generate-cover-letter"
+            "health": "/api/health",
+            "analyze": "/api/analyze",
+            "generate_cover_letter": "/api/generate-cover-letter"
         }
     }
 
-@app.get("/health")
+@app.get("/api/test-ai")
+async def test_ai():
+    """Test AI integration"""
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        api_key = os.environ.get('GEMINI_API_KEY')
+        if not api_key:
+            return {"error": "API key not found"}
+        
+        chat = LlmChat(
+            api_key=api_key,
+            session_id="test_session",
+            system_message="You are a helpful assistant. Respond with JSON: {\"test\": \"working\"}"
+        ).with_model("gemini", "gemini-2.0-flash")
+        
+        user_message = UserMessage(text="Test message")
+        response = await chat.send_message(user_message)
+        
+        return {"success": True, "response": str(response)}
+        
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "version": "1.0.0"}
 
-@app.post("/analyze")
+@app.post("/api/analyze")
 async def analyze_resume(
     job_description: str = Form(...),
     resume_text: Optional[str] = Form(None),
@@ -416,15 +597,29 @@ async def analyze_resume(
         
         print(f"✅ Processing analysis - Job desc: {len(processed_job_desc)} chars, Resume: {len(processed_resume_text)} chars")
         
-        # Get AI analysis
-        analysis_result = await get_ai_response(
+        # Get AI analysis with retry capability
+        ai_result = await get_ai_response_with_retry(
             processed_job_desc, 
             processed_resume_text
         )
         
+        # Check if AI analysis was successful
+        if not ai_result.success:
+            # Return detailed error information for frontend to handle
+            raise HTTPException(
+                status_code=503,  # Service Unavailable
+                detail={
+                    "error_type": ai_result.error.error_type,
+                    "message": ai_result.error.message,
+                    "retryable": ai_result.error.retryable,
+                    "retry_after_seconds": ai_result.error.retry_after_seconds,
+                    "details": ai_result.error.details
+                }
+            )
+        
         return {
             "analysis_id": str(uuid.uuid4()),
-            "analysis": analysis_result,
+            "analysis": ai_result.data["analysis"],
             "original_resume": processed_resume_text,
             "job_description": processed_job_desc,
             "created_at": datetime.utcnow(),
@@ -440,7 +635,7 @@ async def analyze_resume(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/generate-cover-letter")
+@app.post("/api/generate-cover-letter")
 async def generate_cover_letter(
     job_description: str = Form(...),
     resume_text: Optional[str] = Form(None),
@@ -483,11 +678,27 @@ async def generate_cover_letter(
         if not processed_job_desc.strip() or not processed_resume_text.strip():
             raise HTTPException(status_code=400, detail="Both job description and resume content are required")
         
-        result = await get_cover_letter_response(
+        # Generate cover letter with retry capability
+        result = await get_cover_letter_response_with_retry(
             processed_job_desc,
             processed_resume_text
         )
-        return result
+        
+        # Check if cover letter generation was successful
+        if not result.success:
+            # Return detailed error information for frontend to handle
+            raise HTTPException(
+                status_code=503,  # Service Unavailable
+                detail={
+                    "error_type": result.error.error_type,
+                    "message": result.error.message,
+                    "retryable": result.error.retryable,
+                    "retry_after_seconds": result.error.retry_after_seconds,
+                    "details": result.error.details
+                }
+            )
+        
+        return result.data
         
     except HTTPException:
         raise
