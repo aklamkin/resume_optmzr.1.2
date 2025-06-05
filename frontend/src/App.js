@@ -9,6 +9,8 @@ function App() {
   const [resumeFile, setResumeFile] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [progressSteps, setProgressSteps] = useState([]);
+  const [currentStep, setCurrentStep] = useState(0);
   const [appliedSuggestions, setAppliedSuggestions] = useState(new Set());
   const [optimizedResume, setOptimizedResume] = useState('');
   
