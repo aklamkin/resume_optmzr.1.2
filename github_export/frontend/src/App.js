@@ -201,19 +201,19 @@ function App() {
 
       if (!response.ok) {
         let errorData;
+        const responseText = await response.text();
         try {
           // Try to parse as JSON first
-          errorData = await response.json();
+          errorData = JSON.parse(responseText);
         } catch (parseError) {
-          // If JSON parsing fails, get text content
-          const textContent = await response.text();
-          console.error('Non-JSON error response:', textContent);
+          // If JSON parsing fails, treat as text error
+          console.error('Non-JSON error response:', responseText);
           
           // Check if it's an HTML error page
-          if (textContent.includes('<!DOCTYPE') || textContent.includes('<html')) {
+          if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
             throw new Error(`Server error (${response.status}): Unable to reach the backend service. Please try again in a moment.`);
           } else {
-            throw new Error(`Server error (${response.status}): ${textContent}`);
+            throw new Error(`Server error (${response.status}): ${responseText}`);
           }
         }
         
@@ -233,10 +233,13 @@ function App() {
       updateProgress(4);
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      const result = await response.json().catch(async () => {
-        const text = await response.text();
-        throw new Error(`Invalid response format: ${text.substring(0, 100)}`);
-      });
+      const responseText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error(`Invalid response format: ${responseText.substring(0, 100)}`);
+      }
       
       // Step 6: Finalizing
       updateProgress(5);
@@ -315,10 +318,13 @@ function App() {
           updateProgress(4);
           await new Promise(resolve => setTimeout(resolve, 300));
 
-          const result = await response.json().catch(async () => {
-            const text = await response.text();
-            throw new Error(`Invalid response format: ${text.substring(0, 100)}`);
-          });
+          const responseText = await response.text();
+          let result;
+          try {
+            result = JSON.parse(responseText);
+          } catch (parseError) {
+            throw new Error(`Invalid response format: ${responseText.substring(0, 100)}`);
+          }
           
           updateProgress(5);
           await new Promise(resolve => setTimeout(resolve, 500));
@@ -330,7 +336,13 @@ function App() {
           return;
           
         } else {
-          const errorData = await response.json();
+          const responseText = await response.text();
+          let errorData;
+          try {
+            errorData = JSON.parse(responseText);
+          } catch {
+            errorData = { detail: responseText };
+          }
           
           // Check if this is the last attempt
           if (attempt >= maxRetries) {
@@ -510,19 +522,19 @@ function App() {
 
       if (!response.ok) {
         let errorData;
+        const responseText = await response.text();
         try {
           // Try to parse as JSON first
-          errorData = await response.json();
+          errorData = JSON.parse(responseText);
         } catch (parseError) {
-          // If JSON parsing fails, get text content
-          const textContent = await response.text();
-          console.error('Non-JSON error response:', textContent);
+          // If JSON parsing fails, treat as text error
+          console.error('Non-JSON error response:', responseText);
           
           // Check if it's an HTML error page
-          if (textContent.includes('<!DOCTYPE') || textContent.includes('<html')) {
+          if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
             throw new Error(`Server error (${response.status}): Unable to reach the backend service. Please try again in a moment.`);
           } else {
-            throw new Error(`Server error (${response.status}): ${textContent}`);
+            throw new Error(`Server error (${response.status}): ${responseText}`);
           }
         }
         
@@ -538,10 +550,13 @@ function App() {
         throw new Error(errorData.detail?.message || errorData.detail || `Cover letter generation failed (${response.status})`);
       }
 
-      const result = await response.json().catch(async () => {
-        const text = await response.text();
-        throw new Error(`Invalid response format: ${text.substring(0, 100)}`);
-      });
+      const responseText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error(`Invalid response format: ${responseText.substring(0, 100)}`);
+      }
       setCoverLetterShort(result.short_version || '');
       setCoverLetterLong(result.long_version || '');
       setShowCoverLetter(true);
@@ -589,10 +604,13 @@ function App() {
         });
 
         if (response.ok) {
-          const result = await response.json().catch(async () => {
-            const text = await response.text();
-            throw new Error(`Invalid response format: ${text.substring(0, 100)}`);
-          });
+          const responseText = await response.text();
+          let result;
+          try {
+            result = JSON.parse(responseText);
+          } catch (parseError) {
+            throw new Error(`Invalid response format: ${responseText.substring(0, 100)}`);
+          }
           updateProgress(4);
           await new Promise(resolve => setTimeout(resolve, 300));
           updateProgress(5);
@@ -609,9 +627,10 @@ function App() {
           return;
         } else {
           if (attempt >= maxRetries) {
+            const responseText = await response.text();
             let errorData;
             try {
-              errorData = await response.json();
+              errorData = JSON.parse(responseText);
             } catch {
               errorData = { detail: { message: `Server error (${response.status})` } };
             }
@@ -657,10 +676,13 @@ function App() {
         });
 
         if (response.ok) {
-          const result = await response.json().catch(async () => {
-            const text = await response.text();
-            throw new Error(`Invalid response format: ${text.substring(0, 100)}`);
-          });
+          const responseText = await response.text();
+          let result;
+          try {
+            result = JSON.parse(responseText);
+          } catch (parseError) {
+            throw new Error(`Invalid response format: ${responseText.substring(0, 100)}`);
+          }
           setCoverLetterShort(result.short_version || '');
           setCoverLetterLong(result.long_version || '');
           setShowCoverLetter(true);
@@ -669,9 +691,10 @@ function App() {
           return;
         } else {
           if (attempt >= maxRetries) {
+            const responseText = await response.text();
             let errorData;
             try {
-              errorData = await response.json();
+              errorData = JSON.parse(responseText);
             } catch {
               errorData = { detail: { message: `Server error (${response.status})` } };
             }
