@@ -516,13 +516,13 @@ function App() {
 
       if (!response.ok) {
         let errorData;
+        const responseText = await response.text();
         try {
           // Try to parse as JSON first
-          errorData = await response.json();
+          errorData = JSON.parse(responseText);
         } catch (parseError) {
-          // If JSON parsing fails, get text content
-          const textContent = await response.text();
-          console.error('Non-JSON error response:', textContent);
+          // If JSON parsing fails, treat as text error
+          console.error('Non-JSON error response:', responseText);
           
           // Check if it's an HTML error page
           if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
