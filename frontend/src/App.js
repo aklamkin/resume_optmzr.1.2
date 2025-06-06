@@ -336,7 +336,13 @@ function App() {
           return;
           
         } else {
-          const errorData = await response.json();
+          const responseText = await response.text();
+          let errorData;
+          try {
+            errorData = JSON.parse(responseText);
+          } catch {
+            errorData = { detail: responseText };
+          }
           
           // Check if this is the last attempt
           if (attempt >= maxRetries) {
