@@ -213,7 +213,7 @@ function App() {
           if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
             throw new Error(`Server error (${response.status}): Unable to reach the backend service. Please try again in a moment.`);
           } else {
-            throw new Error(`Server error (${response.status}): ${textContent}`);
+            throw new Error(`Server error (${response.status}): ${responseText}`);
           }
         }
         
