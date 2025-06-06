@@ -669,10 +669,13 @@ function App() {
         });
 
         if (response.ok) {
-          const result = await response.json().catch(async () => {
-            const text = await response.text();
-            throw new Error(`Invalid response format: ${text.substring(0, 100)}`);
-          });
+          const responseText = await response.text();
+          let result;
+          try {
+            result = JSON.parse(responseText);
+          } catch (parseError) {
+            throw new Error(`Invalid response format: ${responseText.substring(0, 100)}`);
+          }
           setCoverLetterShort(result.short_version || '');
           setCoverLetterLong(result.long_version || '');
           setShowCoverLetter(true);
