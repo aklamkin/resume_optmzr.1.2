@@ -691,9 +691,10 @@ function App() {
           return;
         } else {
           if (attempt >= maxRetries) {
+            const responseText = await response.text();
             let errorData;
             try {
-              errorData = await response.json();
+              errorData = JSON.parse(responseText);
             } catch {
               errorData = { detail: { message: `Server error (${response.status})` } };
             }
