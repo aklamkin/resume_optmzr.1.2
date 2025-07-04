@@ -488,6 +488,16 @@ Create TWO strategically crafted cover letters that position the candidate as th
 4. **Strategic Keyword Use**: Natural incorporation of job description language
 5. **Compelling Narrative**: Tells a story of progressive success and fit
 
+## CRITICAL CONSTRAINTS - DO NOT VIOLATE
+⚠️ **AUTHENTICITY RULE**: You are STRICTLY PROHIBITED from claiming any skills, experiences, technologies, products, tools, or qualifications that are NOT explicitly present in the candidate's resume. You must work exclusively with the candidate's actual background.
+
+- ✅ ALLOWED: Enhance presentation of existing skills and experiences, quantify actual achievements
+- ❌ FORBIDDEN: Claiming knowledge of technologies, tools, or skills not in the resume
+- ✅ ALLOWED: Connect existing experience to job requirements in compelling ways
+- ❌ FORBIDDEN: Inventing new projects, certifications, or capabilities
+- ✅ ALLOWED: Highlight transferable aspects of actual experience
+- ❌ FORBIDDEN: Adding any qualifications to make candidate appear more suitable
+
 ## OUTPUT FORMAT
 Return exactly this JSON structure:
 
