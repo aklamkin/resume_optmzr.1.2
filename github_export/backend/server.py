@@ -300,12 +300,25 @@ Provide analysis in this exact JSON structure:
 5. **Hiring Manager Perspective**: Consider what decision-makers actually want to see
 
 ## CRITICAL CONSTRAINTS - DO NOT VIOLATE
-⚠️ **AUTHENTICITY RULE**: You are STRICTLY PROHIBITED from adding any skills, technologies, products, tools, or experiences that are NOT already present in the candidate's resume. Your role is to optimize and better present existing qualifications, never to invent new ones.
+⚠️ **ZERO FABRICATION RULE**: You are STRICTLY PROHIBITED from adding, inventing, or fabricating ANY information that is not explicitly present in the original resume. This includes but is not limited to:
 
-- ✅ ALLOWED: Enhance phrasing of existing skills, quantify existing achievements, improve presentation of current experience
-- ❌ FORBIDDEN: Adding new programming languages, tools, certifications, or any qualifications not in the original resume
-- ✅ ALLOWED: Suggest better ways to highlight existing skills for ATS optimization  
-- ❌ FORBIDDEN: Recommending skills from job description that candidate doesn't possess
+❌ **FORBIDDEN FABRICATIONS**:
+- Skills, technologies, tools, or software not mentioned
+- Quantified metrics, percentages, or numbers not provided
+- Specific achievements, projects, or accomplishments not listed
+- Company names, job titles, or dates not present
+- Certifications, education, or training not mentioned
+- Any specific details, facts, or claims not in original content
+
+✅ **ONLY ALLOWED**:
+- Rewriting existing content for better clarity and impact
+- Improving grammar, structure, and professional language
+- Enhancing presentation of information already present
+- Better organization and formatting of existing details
+- Strategic keyword placement using existing qualifications
+- Suggesting removal of weak or irrelevant content
+
+**ENHANCEMENT PRINCIPLE**: If it's not explicitly in the resume, don't add it. Your role is to polish and optimize existing content, never to invent new information.
 
 ## QUALITY STANDARDS
 - Suggestions must be specific and immediately actionable
@@ -489,14 +502,25 @@ Create TWO strategically crafted cover letters that position the candidate as th
 5. **Compelling Narrative**: Tells a story of progressive success and fit
 
 ## CRITICAL CONSTRAINTS - DO NOT VIOLATE
-⚠️ **AUTHENTICITY RULE**: You are STRICTLY PROHIBITED from claiming any skills, experiences, technologies, products, tools, or qualifications that are NOT explicitly present in the candidate's resume. You must work exclusively with the candidate's actual background.
+⚠️ **ZERO FABRICATION RULE**: You are STRICTLY PROHIBITED from adding, inventing, or fabricating ANY information that is not explicitly present in the original resume. This includes but is not limited to:
 
-- ✅ ALLOWED: Enhance presentation of existing skills and experiences, quantify actual achievements
-- ❌ FORBIDDEN: Claiming knowledge of technologies, tools, or skills not in the resume
-- ✅ ALLOWED: Connect existing experience to job requirements in compelling ways
-- ❌ FORBIDDEN: Inventing new projects, certifications, or capabilities
-- ✅ ALLOWED: Highlight transferable aspects of actual experience
-- ❌ FORBIDDEN: Adding any qualifications to make candidate appear more suitable
+❌ **FORBIDDEN FABRICATIONS**:
+- Skills, experiences, or qualifications not mentioned in resume
+- Specific metrics, numbers, percentages, or quantified achievements not provided
+- Company names, project details, or accomplishments not listed
+- Technologies, tools, or certifications not present in original
+- Any dates, locations, or specific facts not mentioned
+- Achievements, awards, or recognition not in resume
+
+✅ **ONLY ALLOWED**:
+- Enhancing presentation of existing information from resume
+- Improving language and tone while staying factually accurate
+- Better connecting existing experience to job requirements
+- Reorganizing existing content for maximum impact
+- Using existing achievements to demonstrate value proposition
+- Professional phrasing of actual background and experience
+
+**ENHANCEMENT PRINCIPLE**: Work exclusively with what the candidate actually has. Your expertise is in presentation and positioning, not content creation.
 
 ## OUTPUT FORMAT
 Return exactly this JSON structure:
