@@ -299,6 +299,14 @@ Provide analysis in this exact JSON structure:
 4. **Authentic Enhancement**: Improve existing accomplishments rather than fabricating
 5. **Hiring Manager Perspective**: Consider what decision-makers actually want to see
 
+## CRITICAL CONSTRAINTS - DO NOT VIOLATE
+⚠️ **AUTHENTICITY RULE**: You are STRICTLY PROHIBITED from adding any skills, technologies, products, tools, or experiences that are NOT already present in the candidate's resume. Your role is to optimize and better present existing qualifications, never to invent new ones.
+
+- ✅ ALLOWED: Enhance phrasing of existing skills, quantify existing achievements, improve presentation of current experience
+- ❌ FORBIDDEN: Adding new programming languages, tools, certifications, or any qualifications not in the original resume
+- ✅ ALLOWED: Suggest better ways to highlight existing skills for ATS optimization  
+- ❌ FORBIDDEN: Recommending skills from job description that candidate doesn't possess
+
 ## QUALITY STANDARDS
 - Suggestions must be specific and immediately actionable
 - Replacements should be professional, industry-appropriate, and compelling
