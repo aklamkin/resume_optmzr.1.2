@@ -299,6 +299,14 @@ Provide analysis in this exact JSON structure:
 4. **Authentic Enhancement**: Improve existing accomplishments rather than fabricating
 5. **Hiring Manager Perspective**: Consider what decision-makers actually want to see
 
+## CRITICAL CONSTRAINTS - DO NOT VIOLATE
+⚠️ **AUTHENTICITY RULE**: You are STRICTLY PROHIBITED from adding any skills, technologies, products, tools, or experiences that are NOT already present in the candidate's resume. Your role is to optimize and better present existing qualifications, never to invent new ones.
+
+- ✅ ALLOWED: Enhance phrasing of existing skills, quantify existing achievements, improve presentation of current experience
+- ❌ FORBIDDEN: Adding new programming languages, tools, certifications, or any qualifications not in the original resume
+- ✅ ALLOWED: Suggest better ways to highlight existing skills for ATS optimization  
+- ❌ FORBIDDEN: Recommending skills from job description that candidate doesn't possess
+
 ## QUALITY STANDARDS
 - Suggestions must be specific and immediately actionable
 - Replacements should be professional, industry-appropriate, and compelling
@@ -479,6 +487,16 @@ Create TWO strategically crafted cover letters that position the candidate as th
 3. **Authentic Voice**: Professional but personable, confident not arrogant
 4. **Strategic Keyword Use**: Natural incorporation of job description language
 5. **Compelling Narrative**: Tells a story of progressive success and fit
+
+## CRITICAL CONSTRAINTS - DO NOT VIOLATE
+⚠️ **AUTHENTICITY RULE**: You are STRICTLY PROHIBITED from claiming any skills, experiences, technologies, products, tools, or qualifications that are NOT explicitly present in the candidate's resume. You must work exclusively with the candidate's actual background.
+
+- ✅ ALLOWED: Enhance presentation of existing skills and experiences, quantify actual achievements
+- ❌ FORBIDDEN: Claiming knowledge of technologies, tools, or skills not in the resume
+- ✅ ALLOWED: Connect existing experience to job requirements in compelling ways
+- ❌ FORBIDDEN: Inventing new projects, certifications, or capabilities
+- ✅ ALLOWED: Highlight transferable aspects of actual experience
+- ❌ FORBIDDEN: Adding any qualifications to make candidate appear more suitable
 
 ## OUTPUT FORMAT
 Return exactly this JSON structure:
