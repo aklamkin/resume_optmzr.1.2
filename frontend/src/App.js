@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import './App.css';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import jsPDF from 'jspdf';
+import Preferences from './Preferences';
 
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -49,6 +50,9 @@ function App() {
   // Ratings popup state
   const [showRatingPopup, setShowRatingPopup] = useState(false);
   const [selectedRating, setSelectedRating] = useState(null);
+
+  // Preferences state
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
 
   // Retry dialog state
   const [showRetryDialog, setShowRetryDialog] = useState(false);
@@ -192,6 +196,16 @@ function App() {
         formData.append('resume_file', resumeFile);
       } else {
         formData.append('resume_text', resumeText);
+      }
+
+      const apiKeys = localStorage.getItem('apiKeys');
+      const service = 'gemini'; // Or get from preferences
+      const customPrompt = localStorage.getItem('customPrompt');
+
+      formData.append('service', service);
+      formData.append('api_keys', apiKeys ? apiKeys : '{}');
+      if (customPrompt) {
+        formData.append('custom_prompt', customPrompt);
       }
 
       const response = await fetch(`${API_BASE_URL}/api/analyze`, {
@@ -1340,11 +1354,47 @@ function App() {
     return analysisData ? analysisData.suggestions : [];
   };
 
+  const saveResults = async () => {
+    const savePath = localStorage.getItem('savePath');
+    if (!savePath) {
+      alert('Please set a save path in the preferences.');
+      return;
+    }
+
+    const dataToSave = {
+      jobDescription,
+      originalResume: analysisResult?.original_resume || resumeText,
+      optimizedResume,
+      analysisResult,
+      savePath,
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/save-results`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSave),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to save results');
+      }
+
+      alert('Results saved successfully!');
+    } catch (error) {
+      console.error('Error saving results:', error);
+      alert(`Failed to save results: ${error.message}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex flex-col">
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100 flex-shrink-0 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div 
             onClick={resetForm}
             className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity duration-200"
@@ -1356,6 +1406,12 @@ function App() {
               <p className="text-sm text-gray-600">Optimize with intelligence</p>
             </div>
           </div>
+          <button
+            onClick={() => setIsPreferencesOpen(true)}
+            className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+          >
+            Preferences
+          </button>
         </div>
       </div>
 
@@ -1650,6 +1706,15 @@ function App() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                     <span>Start Over</span>
+                  </button>
+                  <button
+                    onClick={saveResults}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 text-sm shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    <span>Save Results</span>
                   </button>
                 </div>
               </div>
@@ -2478,6 +2543,7 @@ function App() {
           </div>
         </div>
       )}
+      <Preferences isOpen={isPreferencesOpen} onClose={() => setIsPreferencesOpen(false)} />
     </div>
   );
 }

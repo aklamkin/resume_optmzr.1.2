@@ -43,6 +43,16 @@ app.add_middleware(
 class ResumeAnalysisRequest(BaseModel):
     job_description: str
     resume_text: Optional[str] = None
+    service: Optional[str] = 'gemini'
+    api_key: Optional[str] = None
+    custom_prompt: Optional[str] = None
+
+class SaveResultsRequest(BaseModel):
+    jobDescription: str
+    originalResume: str
+    optimizedResume: str
+    analysisResult: dict
+    savePath: str
 
 # Helper functions for file processing
 def extract_text_from_pdf(file_content: bytes) -> str:
@@ -168,14 +178,14 @@ class RetryableResponse(BaseModel):
     error: Optional[APIError] = None
 
 # AI Integration using emergentintegrations with enhanced error handling
-async def get_ai_response_with_retry(job_description: str, resume_text: str, max_retries: int = 3, retry_delay: int = 5):
+async def get_ai_response_with_retry(job_description: str, resume_text: str, service: str, api_key: str, custom_prompt: Optional[str], max_retries: int = 3, retry_delay: int = 5):
     """
     Get AI response with built-in retry logic for handling service overloads
     """
     for attempt in range(max_retries + 1):
         try:
             print(f"🤖 AI Analysis Attempt {attempt + 1}/{max_retries + 1}")
-            response = await get_ai_response(job_description, resume_text)
+            response = await get_ai_response(job_description, resume_text, service, api_key, custom_prompt)
             return RetryableResponse(success=True, data={"analysis": response})
             
         except Exception as e:
@@ -237,14 +247,14 @@ async def get_ai_response_with_retry(job_description: str, resume_text: str, max
         )
     )
 
-async def get_ai_response(job_description: str, resume_text: str):
+async def get_ai_response(job_description: str, resume_text: str, service: str, api_key: str, custom_prompt: Optional[str]):
     try:
         # Import the emergentintegrations library
         from emergentintegrations.llm.chat import LlmChat, UserMessage
         
-        print(f"🤖 Starting AI analysis - Job desc: {len(job_description)} chars, Resume: {len(resume_text)} chars")
+        print(f"🤖 Starting AI analysis with {service} - Job desc: {len(job_description)} chars, Resume: {len(resume_text)} chars")
         
-        system_prompt = """You are Elena Rodriguez, a Senior Resume Optimization Specialist with 15+ years of experience at Fortune 500 companies and top recruiting firms. You've personally reviewed over 10,000 resumes and have deep expertise in ATS systems, hiring manager psychology, and industry-specific optimization strategies.
+        system_prompt = custom_prompt or """You are Elena Rodriguez, a Senior Resume Optimization Specialist with 15+ years of experience at Fortune 500 companies and top recruiting firms. You've personally reviewed over 10,000 resumes and have deep expertise in ATS systems, hiring manager psychology, and industry-specific optimization strategies.
 
 ## YOUR MISSION
 Conduct a comprehensive resume analysis against the target job description to identify specific, actionable optimization opportunities that will significantly increase the candidate's interview potential.
@@ -329,17 +339,21 @@ Provide analysis in this exact JSON structure:
 Analyze with the precision of a top recruiting firm and the insight of an industry expert."""
 
         # Create AI chat instance
-        api_key = os.environ.get('GEMINI_API_KEY')
-        if not api_key:
-            print("❌ Gemini API key not found")
-            raise HTTPException(status_code=500, detail="Gemini API key not configured")
+        if service == 'gemini':
+            final_api_key = api_key or os.environ.get('GEMINI_API_KEY')
+            if not final_api_key:
+                print("❌ Gemini API key not found")
+                raise HTTPException(status_code=500, detail="Gemini API key not configured")
             
-        print("🔑 API key found, creating chat instance...")
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"resume_analysis_{uuid.uuid4()}",
-            system_message=system_prompt
-        ).with_model("gemini", "gemini-2.0-flash")
+            print("🔑 API key found, creating chat instance...")
+            chat = LlmChat(
+                api_key=final_api_key,
+                session_id=f"resume_analysis_{uuid.uuid4()}",
+                system_message=system_prompt
+            ).with_model("gemini", "gemini-2.0-flash")
+        else:
+            # Placeholder for other services
+            raise HTTPException(status_code=501, detail=f"Service '{service}' not implemented yet.")
 
         # Create user message
         user_message = UserMessage(
@@ -651,7 +665,10 @@ async def health_check():
 async def analyze_resume(
     job_description: str = Form(...),
     resume_text: Optional[str] = Form(None),
-    resume_file: Optional[UploadFile] = File(None)
+    resume_file: Optional[UploadFile] = File(None),
+    service: str = Form('gemini'),
+    api_keys: str = Form('{}'),
+    custom_prompt: Optional[str] = Form(None)
 ):
     """Analyze resume against job description using AI - supports file upload and URL scraping"""
     try:
@@ -701,10 +718,16 @@ async def analyze_resume(
         
         print(f"✅ Processing analysis - Job desc: {len(processed_job_desc)} chars, Resume: {len(processed_resume_text)} chars")
         
+        api_key_dict = json.loads(api_keys)
+        api_key = api_key_dict.get(service)
+
         # Get AI analysis with retry capability
         ai_result = await get_ai_response_with_retry(
             processed_job_desc, 
-            processed_resume_text
+            processed_resume_text,
+            service,
+            api_key,
+            custom_prompt
         )
         
         # Check if AI analysis was successful
@@ -806,6 +829,31 @@ async def generate_cover_letter(
         
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/save-results")
+async def save_results(request: SaveResultsRequest):
+    """Save analysis results to a file"""
+    try:
+        save_path = request.savePath
+        if not os.path.isdir(save_path):
+            os.makedirs(save_path, exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_path = os.path.join(save_path, f"resume_analysis_{timestamp}.json")
+
+        results_to_save = {
+            "jobDescription": request.jobDescription,
+            "originalResume": request.originalResume,
+            "optimizedResume": request.optimizedResume,
+            "analysisResult": request.analysisResult,
+        }
+
+        with open(file_path, "w") as f:
+            json.dump(results_to_save, f, indent=2)
+
+        return {"message": "Results saved successfully", "file_path": file_path}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
