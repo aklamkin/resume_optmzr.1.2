@@ -29,12 +29,6 @@ function App() {
   const [optimizedResume, setOptimizedResume] = useState('');
   const [isEditingResume, setIsEditingResume] = useState(false);
   
-  // Resizable panels state
-  const [panelWidths, setPanelWidths] = useState([33.33, 33.33, 33.33]); // percentages
-  const [isResizing, setIsResizing] = useState(false);
-  const [resizeIndex, setResizeIndex] = useState(null);
-  const containerRef = useRef(null);
-  
   // Cover letter state
   const [showCoverLetter, setShowCoverLetter] = useState(false);
   const [coverLetterShort, setCoverLetterShort] = useState('');
