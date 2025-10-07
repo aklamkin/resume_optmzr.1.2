@@ -65,18 +65,6 @@ function App() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showDownloadDropdown, showCoverLetterDropdown]);
 
-  // Add event listeners for resizing
-  React.useEffect(() => {
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isResizing, handleMouseMove, handleMouseUp]);
-
   // Progress tracking
   const initializeProgress = () => {
     const steps = [
