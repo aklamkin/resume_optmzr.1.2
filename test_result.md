@@ -372,3 +372,7 @@ agent_communication:
     message: "CRITICAL FIX: Fixed Apply/Remove buttons functionality that was not modifying resume text. Completely rewrote toggleSuggestion function with robust text replacement strategies, improved addSkillToResume and addKeywordToResume functions with better error handling and duplicate detection. Added comprehensive logging for debugging. All functions now properly update the optimizedResume state."
   - agent: "testing"
     message: "Completed backend testing after dependency fixes. All endpoints (/api/health, /api/test-ai, /api/analyze, /api/generate-cover-letter) are working correctly. Tests passed with the provided test data. The emergentintegrations library is properly installed and functioning."
+  - agent: "user"
+    message: "Application stuck on 'AI optimization in progress...' during testing. Backend appears unresponsive."
+  - agent: "main"
+    message: "FIXED: Backend was crashing due to missing dependencies (pdfminer.six, Pillow, pypdfium2, and emergentintegrations dependencies). Installed all missing packages and updated requirements.txt. Backend restarted successfully and health check confirms it's working. AI test endpoint also confirmed functional."
