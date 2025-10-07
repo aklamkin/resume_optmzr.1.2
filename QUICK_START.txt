@@ -1,0 +1,126 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                  ResumeAI - QUICK START GUIDE                    ║
+║                     Docker Deployment                            ║
+╚══════════════════════════════════════════════════════════════════╝
+
+📦 WHAT YOU HAVE
+================
+✓ Fully containerized Resume Optimizer application
+✓ 4 Docker containers: Frontend, Backend, Database, Proxy
+✓ Production-ready configuration
+✓ Existing Gemini API key included
+✓ All dependencies pre-configured
+
+🎯 DEPLOY ON SYNOLOGY NAS (3 STEPS)
+====================================
+
+Step 1: Edit Configuration
+--------------------------
+File: .env
+Change this line:
+    REACT_APP_BACKEND_URL=http://192.168.1.100:8080
+Replace 192.168.1.100 with YOUR NAS IP address
+
+Step 2: Upload to NAS
+----------------------
+Method A (GUI):
+  1. Open DSM → File Station
+  2. Upload entire folder to /docker/resumeai/
+  
+Method B (SSH):
+  scp -r . admin@YOUR_NAS_IP:/volume1/docker/resumeai/
+
+Step 3: Deploy
+--------------
+Method A (Container Manager):
+  1. Open Container Manager
+  2. Project → Create
+  3. Name: resumeai
+  4. Path: /docker/resumeai
+  5. Source: docker-compose.yml
+  6. Done!
+
+Method B (SSH):
+  cd /volume1/docker/resumeai
+  sudo docker compose up -d
+
+🌐 ACCESS YOUR APP
+==================
+URL: http://YOUR_NAS_IP:8080
+Example: http://192.168.1.100:8080
+
+⚡ COMMON COMMANDS (via SSH)
+============================
+Start:      docker compose up -d
+Stop:       docker compose down
+Logs:       docker compose logs -f
+Status:     docker compose ps
+Restart:    docker compose restart
+Update:     docker compose pull && docker compose up -d --build
+
+🔧 MANAGEMENT
+=============
+View Backend Logs:    docker compose logs backend
+View Frontend Logs:   docker compose logs frontend
+View Database Logs:   docker compose logs mongodb
+Check Health:         docker compose ps
+Resource Usage:       docker stats
+
+🆘 TROUBLESHOOTING
+==================
+Problem: Can't access on port 8080
+Solution: Check firewall, verify port not in use
+
+Problem: AI analysis fails  
+Solution: Verify GEMINI_API_KEY in .env file
+
+Problem: Container won't start
+Solution: Check logs with: docker compose logs [container_name]
+
+Problem: Database connection error
+Solution: docker compose restart mongodb
+
+📚 DETAILED GUIDES
+==================
+Complete Synology Guide:   SYNOLOGY_DEPLOYMENT.md
+Docker Reference:          DOCKER_README.md
+Full Summary:              CONTAINER_DEPLOYMENT_SUMMARY.md
+
+🔐 SECURITY
+===========
+API Key: AIzaSyAjCoNRO-JjV3BogCG-Z7mJipzbd7puXrw (included)
+Ports:   Only 8080 exposed to network
+Data:    Persisted in Docker volumes (survives restarts)
+
+✅ SUCCESS CHECK
+================
+All containers running:   docker compose ps
+    Should show 4 containers with "Up" status
+
+Backend healthy:          curl http://localhost:8001/api/health
+    Should return: {"status":"healthy"}
+
+Web interface:            http://YOUR_NAS_IP:8080
+    Should load the ResumeAI landing page
+
+📊 RESOURCE REQUIREMENTS
+========================
+RAM:     Minimum 4GB available
+Storage: Minimum 5GB free space
+CPU:     2+ cores recommended
+DSM:     Version 7.0 or higher
+
+🎉 WHAT IT DOES
+===============
+✓ AI-powered resume analysis (Google Gemini)
+✓ PDF and DOCX file support
+✓ Real-time resume editing
+✓ Cover letter generation
+✓ ATS optimization suggestions
+✓ Skills gap analysis
+
+═══════════════════════════════════════════════════════════════════
+Need help? Check SYNOLOGY_DEPLOYMENT.md for detailed instructions
+═══════════════════════════════════════════════════════════════════
+
+Your Resume Optimizer is ready to deploy! 🚀
