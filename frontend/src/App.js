@@ -52,51 +52,6 @@ function App() {
   const [customRetryCount, setCustomRetryCount] = useState(3);
   const [retryMode, setRetryMode] = useState('time'); // 'time' or 'count'
 
-  // Handle panel resizing
-  const handleMouseDown = useCallback((index) => (e) => {
-    e.preventDefault();
-    setIsResizing(true);
-    setResizeIndex(index);
-  }, []);
-
-  const handleMouseMove = useCallback((e) => {
-    if (!isResizing || resizeIndex === null || !containerRef.current) return;
-
-    const container = containerRef.current;
-    const containerRect = container.getBoundingClientRect();
-    const mouseX = e.clientX - containerRect.left;
-    const containerWidth = containerRect.width;
-    const mousePercent = (mouseX / containerWidth) * 100;
-
-    const newWidths = [...panelWidths];
-    const totalOtherPanels = 100 - mousePercent;
-    
-    if (resizeIndex === 0) {
-      // Resizing between first and second panel
-      const remainingWidth = 100 - mousePercent;
-      const ratio = newWidths[2] / (newWidths[1] + newWidths[2]);
-      
-      newWidths[0] = Math.max(15, Math.min(70, mousePercent));
-      newWidths[1] = remainingWidth * (1 - ratio);
-      newWidths[2] = remainingWidth * ratio;
-    } else if (resizeIndex === 1) {
-      // Resizing between second and third panel
-      const firstPanelWidth = newWidths[0];
-      const availableWidth = 100 - firstPanelWidth;
-      const secondPanelPercent = ((mouseX / containerWidth) * 100) - firstPanelWidth;
-      
-      newWidths[1] = Math.max(15, Math.min(availableWidth - 15, secondPanelPercent));
-      newWidths[2] = availableWidth - newWidths[1];
-    }
-
-    setPanelWidths(newWidths);
-  }, [isResizing, resizeIndex, panelWidths]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsResizing(false);
-    setResizeIndex(null);
-  }, []);
-
   // Add event listeners for dropdown close
   React.useEffect(() => {
     const handleClickOutside = (event) => {
