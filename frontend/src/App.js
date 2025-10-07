@@ -1718,144 +1718,133 @@ function App() {
               </div>
             </div>
 
-            {/* Resizable Panels */}
-            <div 
-              ref={containerRef}
-              className="flex-1 flex bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
-              style={{ minHeight: '500px' }}
-            >
-              {/* Original Resume Panel */}
-              <div 
-                className="flex flex-col border-r border-gray-200"
-                style={{ width: `${panelWidths[0]}%` }}
-              >
-                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex-shrink-0">
-                  <h3 className="font-semibold text-gray-900">Original Resume</h3>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {analysisResult?.source_info?.resume_source === 'file' 
-                      ? `📄 From ${analysisResult.source_info.file_type?.toUpperCase()} file`
-                      : '📝 From text input'
-                    }
+            {/* AI Suggestions - Single Panel View */}
+            <div className="flex-1 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-8 py-6 border-b border-blue-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-2">
+                      AI-Powered Resume Suggestions
+                    </h2>
+                    <p className="text-blue-100 text-sm">
+                      {getSuggestions().length} recommendations to optimize your resume for this position
+                    </p>
                   </div>
-                </div>
-                <div className="flex-1 p-4 overflow-auto">
-                  <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
-                    {analysisResult?.original_resume || resumeText}
-                  </pre>
+                  <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
+                    <div className="text-white text-sm font-medium">
+                      {appliedSuggestions.size} / {getSuggestions().length} Applied
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Resize Handle 1 */}
-              <div
-                className="w-1 bg-gray-300 cursor-col-resize hover:bg-gray-400 transition-colors flex-shrink-0"
-                onMouseDown={handleMouseDown(0)}
-              />
-
-              {/* AI Suggestions Panel */}
-              <div 
-                className="flex flex-col border-r border-gray-200"
-                style={{ width: `${panelWidths[1]}%` }}
-              >
-                <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex-shrink-0">
-                  <h3 className="font-semibold text-gray-900">
-                    AI Suggestions ({getSuggestions().length})
-                  </h3>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {analysisResult?.source_info?.job_source === 'url' 
-                      ? '🌐 Job description scraped from URL'
-                      : '📝 Job description from text input'
-                    }
-                  </div>
-                </div>
-                <div className="flex-1 p-4 overflow-auto">
-                  <div className="space-y-3">
-                    {getSuggestions().map((suggestion, index) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-3 bg-white">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-blue-600 uppercase bg-blue-100 px-2 py-1 rounded">
-                            {suggestion.section || 'general'}
-                          </span>
-                          <button
-                            onClick={() => toggleSuggestion(index, suggestion)}
-                            className={`text-xs px-3 py-1 rounded font-medium transition-colors ${
-                              appliedSuggestions.has(index)
-                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                            }`}
-                          >
-                            {appliedSuggestions.has(index) ? 'Applied ✓' : 'Apply'}
-                          </button>
+              {/* Suggestions List */}
+              <div className="flex-1 p-8 overflow-auto" style={{ maxHeight: 'calc(100vh - 450px)' }}>
+                <div className="max-w-5xl mx-auto space-y-6">
+                  {getSuggestions().map((suggestion, index) => (
+                    <div 
+                      key={index} 
+                      className="group bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300"
+                    >
+                      {/* Header with Section and Apply Button */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <span className="text-blue-600 font-bold text-lg">
+                              {index + 1}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="inline-block text-xs font-bold text-blue-700 uppercase tracking-wide bg-blue-100 px-3 py-1.5 rounded-full">
+                              {suggestion.section || 'General'}
+                            </span>
+                          </div>
                         </div>
-                        
-                        {suggestion.current_text && (
-                          <div className="mb-2">
-                            <p className="text-xs text-gray-500 mb-1">Current:</p>
-                            <p className="text-xs text-gray-700 bg-red-50 p-2 rounded border">
+                        <button
+                          onClick={() => toggleSuggestion(index, suggestion)}
+                          className={`px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 transform hover:scale-105 shadow-md ${
+                            appliedSuggestions.has(index)
+                              ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 shadow-green-200'
+                              : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-blue-200'
+                          }`}
+                        >
+                          {appliedSuggestions.has(index) ? (
+                            <span className="flex items-center space-x-2">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span>Applied</span>
+                            </span>
+                          ) : (
+                            <span className="flex items-center space-x-2">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                              </svg>
+                              <span>Apply</span>
+                            </span>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Current Text (if exists) */}
+                      {suggestion.current_text && (
+                        <div className="mb-4">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                            <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">
+                              Current Text
+                            </p>
+                          </div>
+                          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
+                            <p className="text-sm text-gray-800 leading-relaxed">
                               {suggestion.current_text}
                             </p>
                           </div>
-                        )}
-                        
-                        <div className="mb-2">
-                          <p className="text-xs text-gray-500 mb-1">Suggested:</p>
-                          <p className="text-xs text-gray-700 bg-green-50 p-2 rounded border">
+                        </div>
+                      )}
+
+                      {/* Suggested Text */}
+                      <div className="mb-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                          <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">
+                            Recommended Change
+                          </p>
+                        </div>
+                        <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg">
+                          <p className="text-sm text-gray-800 leading-relaxed font-medium">
                             {suggestion.suggested_text}
                           </p>
                         </div>
-                        
-                        <p className="text-xs text-gray-600 italic">
-                          {suggestion.reason}
-                        </p>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
 
-              {/* Resize Handle 2 */}
-              <div
-                className="w-1 bg-gray-300 cursor-col-resize hover:bg-gray-400 transition-colors flex-shrink-0"
-                onMouseDown={handleMouseDown(1)}
-              />
-
-              {/* Optimized Resume Panel */}
-              <div 
-                className="flex flex-col"
-                style={{ width: `${panelWidths[2]}%` }}
-              >
-                <div className="bg-green-50 px-4 py-3 border-b border-gray-200 flex-shrink-0 flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Optimized Resume</h3>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {appliedSuggestions.size > 0 
-                        ? `✨ ${appliedSuggestions.size} suggestions applied`
-                        : '💡 Apply suggestions to see changes'
-                      }
+                      {/* Reason */}
+                      <div className="flex items-start space-x-3 bg-blue-50 p-4 rounded-lg">
+                        <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">
+                            Why This Matters
+                          </p>
+                          <p className="text-sm text-gray-700 leading-relaxed">
+                            {suggestion.reason}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <button
-                    onClick={() => setIsEditingResume(!isEditingResume)}
-                    className={`text-xs px-3 py-1 rounded-lg font-medium transition-all duration-200 ${
-                      isEditingResume 
-                        ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {isEditingResume ? '📖 View' : '✏️ Edit'}
-                  </button>
-                </div>
-                <div className="flex-1 p-4 overflow-auto">
-                  {isEditingResume ? (
-                    <textarea
-                      value={optimizedResume}
-                      onChange={(e) => handleOptimizedResumeChange(e.target.value)}
-                      className="w-full h-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none font-mono text-sm"
-                      placeholder="Your optimized resume will appear here..."
-                    />
-                  ) : (
-                    <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
-                      {optimizedResume}
-                    </pre>
+                  ))}
+
+                  {getSuggestions().length === 0 && (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <p className="text-gray-500 text-lg">No suggestions available</p>
+                    </div>
                   )}
                 </div>
               </div>
